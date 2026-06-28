@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Portfolio</title>
+  <!-- Modern Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&family=Inter:wght@300;400;500;700&family=Mitr:wght@300;400;600&display=swap"
+    rel="stylesheet">
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+  <!-- Scripts -->
+  <script src="svg-assets.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+
+<body>
+
+  <!-- ================= AUTH GATE CONTAINER ================= -->
+  <div id="auth-gate" class="auth-container">
+    <div class="auth-card">
+      <div class="auth-decorations">
+        <div class="auth-sticker sticker-carrot bounce-slow"></div>
+        <div class="auth-sticker sticker-badge rotate-slow"></div>
+      </div>
+
+      <div class="auth-logo" id="auth-logo-svg">
+        <!-- SVG will be injected here -->
+      </div>
+
+      <h1 class="auth-title">Rabbit & Fox</h1>
+      <p class="auth-subtitle">สะสมผลงานและสรุปรายวิชาสุดน่ารัก</p>
+
+      <!-- Login Form -->
+      <form id="login-form" class="auth-form">
+        <h2 class="form-title">เข้าสู่ระบบ</h2>
+        <div class="input-group">
+          <input type="text" id="login-username" required placeholder="ชื่อผู้ใช้งาน">
+        </div>
+        <div class="input-group">
+          <input type="password" id="login-password" required placeholder="รหัสผ่าน">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">เปิดสมุดบันทึก</button>
+        <p class="auth-switch">ยังไม่มีบัญชี? <a href="#" id="switch-to-register">สมัครสมาชิกที่นี่</a></p>
+      </form>
+
+      <!-- Register Form -->
+      <form id="register-form" class="auth-form hidden">
+        <h2 class="form-title">สมัครสมาชิก</h2>
+        <div class="input-group">
+          <input type="text" id="register-name" required placeholder="ชื่อจริง/ชื่อเล่น">
+        </div>
+        <div class="input-group">
+          <input type="text" id="register-username" required placeholder="ชื่อผู้ใช้งาน">
+        </div>
+        <div class="input-group">
+          <input type="password" id="register-password" required placeholder="รหัสผ่าน">
+        </div>
+        <button type="submit" class="btn btn-secondary btn-block">สร้างบัญชี</button>
+        <p class="auth-switch">มีบัญชีอยู่แล้ว? <a href="#" id="switch-to-login">เข้าสู่ระบบ</a></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MAIN APPLICATION CONTAINER ================= -->
+  <div id="app-container" class="app-container hidden">
+
+    <!-- DESKTOP TOP HEADER / NAV BAR -->
+    <header class="desktop-header">
+      <div class="header-logo-section">
+        <div class="header-logo" id="header-logo-svg"></div>
+        <span class="site-title">Rabbit & Fox</span>
+      </div>
+
+      <!-- Desktop Navigation Links -->
+      <nav class="desktop-nav">
+        <button class="nav-item active" data-target="home">
+          <span class="nav-icon" id="d-nav-home"></span> หน้าหลัก
+        </button>
+        <button class="nav-item" data-target="add">
+          <span class="nav-icon" id="d-nav-add"></span> เพิ่มผลงาน
+        </button>
+        <button class="nav-item" data-target="profile">
+          <span class="nav-icon" id="d-nav-profile"></span> โปรไฟล์
+        </button>
+      </nav>
+
+      <!-- User quick status -->
+      <div class="header-user-badge">
+        <div class="avatar-mini" id="header-avatar"></div>
+        <span class="user-display-name" id="header-username-text">username</span>
+        <button class="btn-logout-icon" id="btn-logout-desktop" title="ออกจากระบบ"></button>
+      </div>
+    </header>
+
+    <!-- SEARCH & HERO ACCENT HEADER (Like Nick & Judy Banner in Reference) -->
+    <section class="scrapbook-hero-banner" id="hero-banner">
+      <div class="hero-card-left glass-panel">
+        <div class="curled-photo-container">
+          <div class="photo-wrapper">
+            <div class="sticker-overlap" id="hero-overlap-sticker"></div>
+            <!-- Judy & Nick Selfie Mock -->
+            <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401?w=800&auto=format&fit=crop&q=60"
+              alt="Selfie" class="selfie-img">
+          </div>
+          <div class="curl-effect"></div>
+        </div>
+        <div class="hero-quote">
+          <p class="quote-eng">"Like Nick and Judy we argue, laugh, and still choose each other."</p>
+          <p class="quote-th">สะสมสรุปบทเรียนและผลงานดีๆ ไว้ในที่เดียวกันอย่างสนุกสนาน</p>
+        </div>
+        <!-- Decorative Heart Badge -->
+        <div class="badge-absolute" id="hero-heart-badge"></div>
+      </div>
+
+      <div class="hero-card-right glass-panel">
+        <div class="search-section-box">
+          <div class="search-bar">
+            <span class="search-icon-wrapper" id="hero-search-icon"></span>
+            <input type="text" id="search-input" placeholder="ค้นหาโฟลเดอร์ หรือ ชื่อวิชา...">
+            <button class="btn btn-search" id="btn-search-trigger">ค้นหา</button>
+          </div>
+        </div>
+
+        <div class="stickers-container-row">
+          <div class="mini-sticker-badge carrot-badge" id="badge-row-1"></div>
+          <div class="mini-sticker-badge police-badge" id="badge-row-2"></div>
+          <div class="mini-sticker-badge paw-badge" id="badge-row-3"></div>
+        </div>
+
+        <div class="zootopia-speech-bubbles">
+          <div class="speech-bubble bubble-left">
+            <span>What's up, partner? 🥕</span>
+          </div>
+          <div class="speech-bubble bubble-right">
+            <span>Ready to study! 🦊</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= VIEW 1: HOME SCREEN (FOLDER & SUMMARIES) ================= -->
+    <main class="page-view active" id="view-home">
+      <!-- Section Toggle (Portfolio vs Study Summary) -->
+      <div class="section-filter-bar">
+        <button class="filter-tab active" data-type="all">ทั้งหมด</button>
+        <button class="filter-tab" data-type="portfolio">ผลงาน (Portfolio)</button>
+        <button class="filter-tab" data-type="summary">สรุปรายวิชา (Summaries)</button>
+      </div>
+
+      <!-- FOLDERS VIEW SECTION -->
+      <section class="folders-section">
+        <h2 class="section-title-cute">
+          <span class="title-icon" id="icon-folder-title"></span> โฟลเดอร์ของฉัน
+        </h2>
+        <div class="folders-grid" id="folders-container">
+          <!-- Folders injected by JS -->
+        </div>
+      </section>
+
+      <!-- ITEMS GRID SECTION -->
+      <section class="items-section">
+        <div class="section-header-row">
+          <h2 class="section-title-cute" id="items-grid-title">
+            <span class="title-icon" id="icon-items-title"></span> รายการบันทึกทั้งหมด
+          </h2>
+          <button class="btn-back-folders hidden" id="btn-back-folders-list">← กลับไปโฟลเดอร์ทั้งหมด</button>
+        </div>
+        <div class="items-grid polaroid-container" id="items-container">
+          <!-- Items injected by JS -->
+        </div>
+        <div class="empty-state hidden" id="empty-state-view">
+          <div class="empty-sticker" id="empty-carrot-sticker"></div>
+          <h3>ยังไม่มีรายการบันทึกที่นี่...</h3>
+          <p>ลองเพิ่มผลงานชิ้นแรกของคุณโดยกดปุ่ม "เพิ่มผลงาน" ด้านบนหรือด้านล่างดูสิ!</p>
+        </div>
+      </section>
+    </main>
+
+    <!-- ================= VIEW 2: ADD FORM SCREEN ================= -->
+    <main class="page-view" id="view-add">
+      <div class="form-scrapbook-wrapper">
+        <div class="form-tape tape-left-top"></div>
+        <div class="form-tape tape-right-top"></div>
+
+        <h2 class="form-view-title">สร้างบันทึกผลงาน / สรุปรายวิชา</h2>
+
+        <form id="add-item-form" class="scrapbook-form">
+          <!-- Type Selector -->
+          <div class="form-row">
+            <label class="form-label">ประเภทบันทึก</label>
+            <div class="type-switch-container">
+              <label class="type-radio-label active" id="label-type-portfolio">
+                <input type="radio" name="item-type" value="portfolio" checked class="hidden-radio">
+                <span>ผลงาน (Portfolio)</span>
+              </label>
+              <label class="type-radio-label" id="label-type-summary">
+                <input type="radio" name="item-type" value="summary" class="hidden-radio">
+                <span>สรุปรายวิชา (Summary)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Title Input -->
+          <div class="form-row">
+            <label for="add-title" class="form-label" id="label-title-text">ชื่อผลงาน / กิจกรรม</label>
+            <input type="text" id="add-title" required
+              placeholder="เช่น ประกวดวาดภาพระดับจังหวัด, สรุปสูตรวิชาคณิตม.ปลาย" class="form-input">
+          </div>
+
+          <!-- Folder Selection (Dynamic or New) -->
+          <div class="form-row two-columns">
+            <div class="col">
+              <label for="add-folder-select" class="form-label">เลือกโฟลเดอร์ที่มีอยู่</label>
+              <select id="add-folder-select" class="form-select">
+                <option value="">-- สร้างโฟลเดอร์ใหม่ --</option>
+                <!-- Folders options injected by JS -->
+              </select>
+            </div>
+            <div class="col">
+              <label for="add-folder-new" class="form-label">หรือพิมพ์ชื่อโฟลเดอร์ใหม่</label>
+              <input type="text" id="add-folder-new" placeholder="เช่น กิจกรรมจิตอาสา, ฟิสิกส์ ม.5" class="form-input">
+            </div>
+          </div>
+
+          <!-- Code or Date Row -->
+          <div class="form-row two-columns">
+            <div class="col" id="col-subject-code">
+              <label for="add-subject-code" class="form-label">รหัสวิชา (ถ้ามี)</label>
+              <input type="text" id="add-subject-code" placeholder="เช่น MA31101" class="form-input">
+            </div>
+            <div class="col">
+              <label for="add-date" class="form-label">วันที่ทำกิจกรรม / บันทึก</label>
+              <input type="date" id="add-date" required class="form-input">
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div class="form-row">
+            <label for="add-description" class="form-label">รายละเอียดสั้นๆ / บันทึกสรุปย่อ</label>
+            <textarea id="add-description" rows="4" required
+              placeholder="พิมพ์รายละเอียดสั้นๆ ที่อยากบันทึกไว้ตรงนี้..." class="form-textarea"></textarea>
+          </div>
+
+          <!-- Sticker Decor Selection -->
+          <div class="form-row">
+            <label class="form-label">เลือกสติกเกอร์ตกแต่งบนรูปภาพ</label>
+            <div class="sticker-selector-grid">
+              <label class="sticker-option active">
+                <input type="radio" name="decor-sticker" value="carrot" checked class="hidden-radio">
+                <div class="sticker-preview-box" id="preview-sticker-carrot"></div>
+                <span>แครอท</span>
+              </label>
+              <label class="sticker-option">
+                <input type="radio" name="decor-sticker" value="badge" class="hidden-radio">
+                <div class="sticker-preview-box" id="preview-sticker-badge"></div>
+                <span>ตราตำรวจ</span>
+              </label>
+              <label class="sticker-option">
+                <input type="radio" name="decor-sticker" value="paw" class="hidden-radio">
+                <div class="sticker-preview-box" id="preview-sticker-paw"></div>
+                <span>ไอติมเท้าสัตว์</span>
+              </label>
+              <label class="sticker-option">
+                <input type="radio" name="decor-sticker" value="hearts" class="hidden-radio">
+                <div class="sticker-preview-box" id="preview-sticker-hearts"></div>
+                <span>หัวใจคู่</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Image Upload Polaroid Container -->
+          <div class="form-row">
+            <label class="form-label">รูปภาพประกอบ (ลากวางหรือคลิกเพื่อเลือกไฟล์)</label>
+            <div class="upload-polaroid-wrapper" id="polaroid-upload-area">
+              <div class="polaroid-upload-frame">
+                <div class="photo-placeholder-content" id="upload-placeholder">
+                  <div class="upload-icon-svg" id="upload-icon-main"></div>
+                  <p class="upload-txt">คลิกเพื่ออัปโหลดภาพ</p>
+                  <p class="upload-subtxt">รองรับ JPG, PNG, WEBP</p>
+                </div>
+                <img id="upload-img-preview" src="#" alt="Preview" class="preview-img-tag hidden">
+                <!-- Decorative Sticker Overlay Preview -->
+                <div class="photo-sticker-preview-overlay hidden" id="upload-sticker-overlay"></div>
+              </div>
+              <input type="file" id="image-upload-input" accept="image/*" class="hidden-file-input">
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" class="btn btn-primary btn-submit-scrapbook">
+            แปะลงสมุดบันทึก! ✨
+          </button>
+        </form>
+      </div>
+    </main>
+
+    <!-- ================= VIEW 3: PROFILE SCREEN ================= -->
+    <main class="page-view" id="view-profile">
+      <div class="profile-card-wrapper glass-panel">
+
+        <!-- Top Profile Row (Avatar + Stats) -->
+        <div class="profile-header-block">
+          <div class="avatar-selection-wrapper">
+            <div class="profile-avatar-large" id="profile-avatar-big"></div>
+            <div class="avatar-edit-badge" id="btn-edit-avatar-trigger" title="เปลี่ยนรูปโปรไฟล์">✏️</div>
+
+            <!-- Avatar Picker Dropdown Box (Hidden by default) -->
+            <div class="avatar-picker-modal hidden" id="avatar-picker-modal">
+              <h4>เลือกตัวละครของคุณ</h4>
+              <div class="avatar-choices">
+                <div class="avatar-choice-item" data-avatar="judy" id="choice-judy"></div>
+                <div class="avatar-choice-item" data-avatar="nick" id="choice-nick"></div>
+                <div class="avatar-choice-item" data-avatar="carrot" id="choice-carrot"></div>
+                <div class="avatar-choice-item" data-avatar="badge" id="choice-badge"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="profile-stats-block">
+            <h2 class="profile-fullname" id="profile-display-name">Judy Hopps</h2>
+            <p class="profile-username">@<span id="profile-username-tag">judyhopps</span></p>
+
+            <div class="stats-pills-row">
+              <div class="stat-pill bg-cream">
+                <span class="stat-count" id="count-folders">0</span>
+                <span class="stat-label">โฟลเดอร์</span>
+              </div>
+              <div class="stat-pill bg-orange">
+                <span class="stat-count" id="count-portfolios">0</span>
+                <span class="stat-label">ผลงาน</span>
+              </div>
+              <div class="stat-pill bg-blue">
+                <span class="stat-count" id="count-summaries">0</span>
+                <span class="stat-label">สรุปวิชา</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Editable Bio Section -->
+        <div class="profile-details-section">
+          <h3>สมุดจดบันทึกประจำตัว</h3>
+          <div class="bio-container-box">
+            <p class="bio-text" id="profile-bio-text">"Anyone can be anything. ยินดีต้อนรับสู่พอร์ตโฟลิโอแสนอบอุ่นของฉัน
+              ที่ซึ่งรวบรวมผลงานและสรุปวิชาต่างๆ ไว้ในแบบของ Nick & Judy!"</p>
+            <textarea id="profile-bio-edit" class="form-textarea hidden" rows="3"></textarea>
+          </div>
+
+          <div class="profile-actions-row">
+            <button class="btn btn-secondary" id="btn-edit-profile">แก้ไขโปรไฟล์</button>
+            <button class="btn btn-primary hidden" id="btn-save-profile">บันทึกข้อมูล</button>
+            <button class="btn btn-outline" id="btn-logout-profile">ออกจากระบบ</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- MOBILE BOTTOM FLOATING TAB BAR -->
+    <nav class="mobile-nav-bar">
+      <button class="mobile-nav-item active" data-target="home">
+        <span class="mobile-icon" id="m-nav-home"></span>
+        <span class="mobile-label">หน้าหลัก</span>
+      </button>
+      <button class="mobile-nav-item" data-target="add">
+        <span class="mobile-icon" id="m-nav-add"></span>
+        <span class="mobile-label">เพิ่มผลงาน</span>
+      </button>
+      <button class="mobile-nav-item" data-target="profile">
+        <span class="mobile-icon" id="m-nav-profile"></span>
+        <span class="mobile-label">โปรไฟล์</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <!-- ================= DETAILED VIEW / LIGHTBOX MODAL ================= -->
+  <div id="detail-modal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-tape modal-tape-left"></div>
+      <div class="modal-tape modal-tape-right"></div>
+      <button class="modal-close-btn" id="modal-close-trigger" title="ปิด">×</button>
+
+      <div class="modal-body-content">
+        <div class="modal-image-section">
+          <div class="modal-polaroid-frame">
+            <img id="modal-img" src="" alt="Detail Image">
+            <div id="modal-sticker-overlay" class="polaroid-sticker"></div>
+            <!-- Download Button Overlay -->
+            <button class="btn btn-download-overlay" id="btn-modal-download" title="ดาวน์โหลดรูปภาพ">
+              <span class="download-icon">📥</span> ดาวน์โหลดรูปภาพ
+            </button>
+          </div>
+        </div>
+
+        <div class="modal-info-section">
+          <div class="modal-tag-row">
+            <span id="modal-tag" class="card-tag"></span>
+            <span id="modal-date" class="card-date"></span>
+          </div>
+          <div id="modal-subject-code" class="card-subject-code hidden"></div>
+          <h2 id="modal-title" class="modal-title-text"></h2>
+          <div class="modal-description-wrapper">
+            <p id="modal-desc" class="modal-description-text"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+
+</html>
