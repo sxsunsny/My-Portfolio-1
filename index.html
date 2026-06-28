@@ -273,22 +273,17 @@
             </div>
           </div>
 
-          <!-- Image Upload Polaroid Container -->
+          <!-- Image Upload Multi-Image Container -->
           <div class="form-row">
-            <label class="form-label">รูปภาพประกอบ (ลากวางหรือคลิกเพื่อเลือกไฟล์)</label>
-            <div class="upload-polaroid-wrapper" id="polaroid-upload-area">
-              <div class="polaroid-upload-frame">
-                <div class="photo-placeholder-content" id="upload-placeholder">
-                  <div class="upload-icon-svg" id="upload-icon-main"></div>
-                  <p class="upload-txt">คลิกเพื่ออัปโหลดภาพ</p>
-                  <p class="upload-subtxt">รองรับ JPG, PNG, WEBP</p>
-                </div>
-                <img id="upload-img-preview" src="#" alt="Preview" class="preview-img-tag hidden">
-                <!-- Decorative Sticker Overlay Preview -->
-                <div class="photo-sticker-preview-overlay hidden" id="upload-sticker-overlay"></div>
-              </div>
-              <input type="file" id="image-upload-input" accept="image/*" class="hidden-file-input">
+            <label class="form-label">รูปภาพประกอบ <span class="label-sub">(คลิกหรือลากวางรูป · สูงสุด 5
+                รูป)</span></label>
+            <div class="multi-upload-zone" id="multi-upload-zone">
+              <div class="upload-icon-svg" id="upload-icon-main"></div>
+              <p class="upload-txt">คลิกหรือลากวางเพื่อเพิ่มรูปภาพ</p>
+              <p class="upload-subtxt">รองรับ JPG, PNG, WEBP · อัปโหลดได้สูงสุด 5 รูป</p>
+              <input type="file" id="image-upload-input" accept="image/*" multiple class="hidden-file-input">
             </div>
+            <div class="multi-preview-grid" id="multi-preview-grid"></div>
           </div>
 
           <!-- Submit Button -->
@@ -318,6 +313,11 @@
                 <div class="avatar-choice-item" data-avatar="carrot" id="choice-carrot"></div>
                 <div class="avatar-choice-item" data-avatar="badge" id="choice-badge"></div>
               </div>
+              <div class="avatar-picker-divider">— หรือ —</div>
+              <label class="avatar-upload-btn" id="avatar-upload-label">
+                📷 ใช้รูปของตัวเอง
+                <input type="file" id="avatar-upload-input" accept="image/*" class="hidden-file-input">
+              </label>
             </div>
           </div>
 
@@ -387,14 +387,19 @@
 
       <div class="modal-body-content">
         <div class="modal-image-section">
-          <div class="modal-polaroid-frame">
-            <img id="modal-img" src="" alt="Detail Image">
-            <div id="modal-sticker-overlay" class="polaroid-sticker"></div>
-            <!-- Download Button Overlay -->
-            <button class="btn btn-download-overlay" id="btn-modal-download" title="ดาวน์โหลดรูปภาพ">
-              <span class="download-icon">📥</span> ดาวน์โหลดรูปภาพ
-            </button>
+          <div class="modal-gallery-wrapper">
+            <button class="gallery-nav-btn gallery-prev hidden" id="gallery-prev-btn">&#8249;</button>
+            <div class="modal-polaroid-frame">
+              <img id="modal-img" src="" alt="Detail Image">
+              <div id="modal-sticker-overlay" class="polaroid-sticker"></div>
+              <div class="gallery-counter hidden" id="gallery-counter">1 / 1</div>
+              <button class="btn btn-download-overlay" id="btn-modal-download" title="ดาวน์โหลดรูปภาพ">
+                <span class="download-icon">📥</span> ดาวน์โหลดรูปภาพ
+              </button>
+            </div>
+            <button class="gallery-nav-btn gallery-next hidden" id="gallery-next-btn">&#8250;</button>
           </div>
+          <div class="gallery-dots hidden" id="gallery-dots"></div>
         </div>
 
         <div class="modal-info-section">

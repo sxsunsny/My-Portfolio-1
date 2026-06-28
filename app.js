@@ -100,11 +100,9 @@ document.addEventListener("DOMContentLoaded", () => {
     addDate: document.getElementById("add-date"),
     addDescription: document.getElementById("add-description"),
     stickerOptions: document.querySelectorAll(".sticker-option"),
-    polaroidUploadArea: document.getElementById("polaroid-upload-area"),
+    polaroidUploadArea: document.getElementById("multi-upload-zone"),
     imageUploadInput: document.getElementById("image-upload-input"),
-    uploadPlaceholder: document.getElementById("upload-placeholder"),
-    uploadImgPreview: document.getElementById("upload-img-preview"),
-    uploadStickerOverlay: document.getElementById("upload-sticker-overlay"),
+    multiPreviewGrid: document.getElementById("multi-preview-grid"),
     
     // Profile View Elements
     profileDisplayName: document.getElementById("profile-display-name"),
@@ -125,6 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
     profileAvatarBig: document.getElementById("profile-avatar-big"),
     btnEditAvatarTrigger: document.getElementById("btn-edit-avatar-trigger"),
     avatarPickerModal: document.getElementById("avatar-picker-modal"),
+    avatarUploadInput: document.getElementById("avatar-upload-input"),
     
     // Detail Modal Elements
     detailModal: document.getElementById("detail-modal"),
@@ -132,6 +131,10 @@ document.addEventListener("DOMContentLoaded", () => {
     modalImg: document.getElementById("modal-img"),
     modalStickerOverlay: document.getElementById("modal-sticker-overlay"),
     btnModalDownload: document.getElementById("btn-modal-download"),
+    galleryPrevBtn: document.getElementById("gallery-prev-btn"),
+    galleryNextBtn: document.getElementById("gallery-next-btn"),
+    galleryCounter: document.getElementById("gallery-counter"),
+    galleryDots: document.getElementById("gallery-dots"),
     modalTag: document.getElementById("modal-tag"),
     modalDate: document.getElementById("modal-date"),
     modalSubjectCode: document.getElementById("modal-subject-code"),
@@ -249,6 +252,13 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       dom.authGate.classList.remove("hidden");
       dom.appContainer.classList.add("hidden");
+
+      // If this device has never registered any account, jump straight to the register form
+      const existingUsers = JSON.parse(localStorage.getItem("scrapbookUsers") || "[]");
+      if (existingUsers.length === 0) {
+        dom.loginForm.classList.add("hidden");
+        dom.registerForm.classList.remove("hidden");
+      }
     }
   };
 
@@ -257,10 +267,21 @@ document.addEventListener("DOMContentLoaded", () => {
     const allItems = JSON.parse(localStorage.getItem("scrapbookItems") || "[]");
     state.items = allItems.filter(item => item.username === state.currentUser.username);
 
-    // If a fresh new admin/user is logged in, seed with default gorgeous data
-    if (state.items.length === 0 && state.currentUser.username === "admin") {
-      state.items = [...DEFAULT_SEED_ITEMS];
-      localStorage.setItem("scrapbookItems", JSON.stringify(state.items));
+    // If this is a fresh new user with no items yet, seed with default gorgeous demo data
+    if (state.items.length === 0 && !state.currentUser.seeded) {
+      state.items = DEFAULT_SEED_ITEMS.map(item => ({ ...item, username: state.currentUser.username }));
+      const allStoredItems = JSON.parse(localStorage.getItem("scrapbookItems") || "[]");
+      localStorage.setItem("scrapbookItems", JSON.stringify([...allStoredItems, ...state.items]));
+
+      // Mark this user as seeded so we never re-seed after they delete everything
+      state.currentUser.seeded = true;
+      localStorage.setItem("currentUser", JSON.stringify(state.currentUser));
+      const usersList = JSON.parse(localStorage.getItem("scrapbookUsers") || "[]");
+      const targetUser = usersList.find(u => u.username === state.currentUser.username);
+      if (targetUser) {
+        targetUser.seeded = true;
+        localStorage.setItem("scrapbookUsers", JSON.stringify(usersList));
+      }
     }
 
     // Set layout texts
@@ -275,6 +296,14 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const updateAvatarsDOM = () => {
+    // Custom uploaded photo takes priority over the default SVG character avatars
+    if (state.currentUser.avatarImage) {
+      const imgHTML = `<img src="${state.currentUser.avatarImage}" alt="avatar" style="width:100%;height:100%;object-fit:cover;display:block;">`;
+      dom.headerAvatar.innerHTML = imgHTML;
+      dom.profileAvatarBig.innerHTML = imgHTML;
+      return;
+    }
+
     const avatarKey = state.currentUser.avatar || "judy";
     if (window.SVG_ASSETS[avatarKey]) {
       dom.headerAvatar.innerHTML = window.SVG_ASSETS[avatarKey];
@@ -288,21 +317,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const password = document.getElementById("login-password").value;
 
     const users = JSON.parse(localStorage.getItem("scrapbookUsers") || "[]");
-    
-    // Seed default admin account if not exists
-    let user = users.find(u => u.username === username);
-    if (!user && username === "admin" && password === "admin") {
-      user = { username: "admin", password: "admin", name: "Judy & Nick", bio: "Anyone can be anything! ยินดีต้อนรับสู่พอร์ตโฟลิโอแสนอบอุ่น ที่รวบรวมผลงานและสรุปบทเรียนไว้ในแบบของพวกเรา!", avatar: "judy" };
-      users.push(user);
-      localStorage.setItem("scrapbookUsers", JSON.stringify(users));
-    }
+
+    const user = users.find(u => u.username === username);
 
     if (user && user.password === password) {
       localStorage.setItem("currentUser", JSON.stringify(user));
       checkAuthStatus();
       dom.loginForm.reset();
+    } else if (users.length === 0) {
+      alert("ยังไม่มีบัญชีผู้ใช้ในระบบ กรุณาสมัครสมาชิกก่อนเข้าสู่ระบบ!");
     } else {
-      alert("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง (ใบใบ้: ลองใช้ admin / admin)");
+      alert("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
     }
   };
 
@@ -313,7 +338,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const password = document.getElementById("register-password").value;
 
     const users = JSON.parse(localStorage.getItem("scrapbookUsers") || "[]");
-    
+
+    if (!name || !username || !password) {
+      alert("กรุณากรอกข้อมูลให้ครบทุกช่อง!");
+      return;
+    }
+
     if (users.some(u => u.username === username)) {
       alert("ชื่อผู้ใช้งานนี้ถูกใช้ไปแล้ว!");
       return;
@@ -457,6 +487,13 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
+  // Helper: normalize an item's images into an array, supporting older single-image saved items
+  const getItemImages = (item) => {
+    if (Array.isArray(item.images) && item.images.length > 0) return item.images;
+    if (item.image) return [item.image];
+    return ['https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800'];
+  };
+
   const renderItems = () => {
     dom.itemsContainer.innerHTML = "";
     const filteredItems = getFilteredItems();
@@ -483,12 +520,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Sticker drawing
       const stickerSVG = window.SVG_ASSETS[item.sticker] || "";
+      const itemImages = getItemImages(item);
+      const coverImage = itemImages[0];
 
       card.innerHTML = `
         <div class="polaroid-tape"></div>
         <div class="polaroid-img-box">
-          <img src="${escapeHTML(item.image || 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800')}" alt="${escapeHTML(item.title)}" class="polaroid-img">
+          <img src="${escapeHTML(coverImage)}" alt="${escapeHTML(item.title)}" class="polaroid-img">
           ${stickerSVG ? `<div class="polaroid-sticker">${stickerSVG}</div>` : ""}
+          ${itemImages.length > 1 ? `<div class="polaroid-multi-badge">📷 ${itemImages.length}</div>` : ""}
         </div>
         <div class="polaroid-desc-box">
           <div>
@@ -544,13 +584,55 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ================= DETAIL MODAL LOGIC =================
   let modalActiveItem = null;
+  let modalActiveImages = [];
+  let modalActiveIndex = 0;
+
+  const renderModalImage = () => {
+    dom.modalImg.src = modalActiveImages[modalActiveIndex];
+    dom.modalImg.alt = modalActiveItem ? modalActiveItem.title : "";
+
+    const hasMultiple = modalActiveImages.length > 1;
+    dom.galleryPrevBtn.classList.toggle('hidden', !hasMultiple);
+    dom.galleryNextBtn.classList.toggle('hidden', !hasMultiple);
+    dom.galleryCounter.classList.toggle('hidden', !hasMultiple);
+    dom.galleryDots.classList.toggle('hidden', !hasMultiple);
+
+    if (hasMultiple) {
+      dom.galleryCounter.textContent = `${modalActiveIndex + 1} / ${modalActiveImages.length}`;
+
+      dom.galleryDots.innerHTML = "";
+      modalActiveImages.forEach((_, idx) => {
+        const dot = document.createElement("span");
+        dot.className = `gallery-dot ${idx === modalActiveIndex ? "active" : ""}`;
+        dot.addEventListener("click", (e) => {
+          e.stopPropagation();
+          modalActiveIndex = idx;
+          renderModalImage();
+        });
+        dom.galleryDots.appendChild(dot);
+      });
+    }
+  };
+
+  const showPrevImage = () => {
+    if (modalActiveImages.length <= 1) return;
+    modalActiveIndex = (modalActiveIndex - 1 + modalActiveImages.length) % modalActiveImages.length;
+    renderModalImage();
+  };
+
+  const showNextImage = () => {
+    if (modalActiveImages.length <= 1) return;
+    modalActiveIndex = (modalActiveIndex + 1) % modalActiveImages.length;
+    renderModalImage();
+  };
 
   const openDetailModal = (item) => {
     modalActiveItem = item;
-    
+    modalActiveImages = getItemImages(item);
+    modalActiveIndex = 0;
+
     // Set text and image
-    dom.modalImg.src = item.image || 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800';
-    dom.modalImg.alt = item.title;
+    renderModalImage();
     dom.modalTitle.textContent = item.title;
     dom.modalDesc.textContent = item.description;
 
@@ -596,15 +678,34 @@ document.addEventListener("DOMContentLoaded", () => {
     dom.detailModal.classList.add('hidden');
     document.body.style.overflow = ''; // Restore scrolling
     modalActiveItem = null;
+    modalActiveImages = [];
+    modalActiveIndex = 0;
   };
+
+  // Gallery nav button clicks
+  dom.galleryPrevBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    showPrevImage();
+  });
+  dom.galleryNextBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    showNextImage();
+  });
+
+  // Arrow key navigation while modal is open
+  document.addEventListener("keydown", (e) => {
+    if (dom.detailModal.classList.contains("hidden")) return;
+    if (e.key === "ArrowLeft") showPrevImage();
+    if (e.key === "ArrowRight") showNextImage();
+  });
 
   // Download logic function
   const triggerImageDownload = async () => {
-    if (!modalActiveItem) return;
-    
-    const imgUrl = modalActiveItem.image;
+    if (!modalActiveItem || modalActiveImages.length === 0) return;
+
+    const imgUrl = modalActiveImages[modalActiveIndex];
     const cleanTitle = modalActiveItem.title.replace(/[^a-zA-Z0-9\u0E00-\u0E7F\s-_]/g, '').trim() || 'image';
-    const filename = `${cleanTitle}-${modalActiveItem.date}.png`;
+    const filename = `${cleanTitle}-${modalActiveItem.date}-${modalActiveIndex + 1}.png`;
 
     try {
       if (imgUrl.startsWith('data:')) {
@@ -706,17 +807,6 @@ document.addEventListener("DOMContentLoaded", () => {
     opt.addEventListener("click", () => {
       dom.stickerOptions.forEach(o => o.classList.remove("active"));
       opt.classList.add("active");
-      const stickerVal = opt.querySelector("input").value;
-      
-      // Update preview sticker overlap
-      if (dom.uploadImgPreview.classList.contains("hidden")) return;
-      
-      if (window.SVG_ASSETS[stickerVal]) {
-        dom.uploadStickerOverlay.innerHTML = window.SVG_ASSETS[stickerVal];
-        dom.uploadStickerOverlay.classList.remove("hidden");
-      } else {
-        dom.uploadStickerOverlay.classList.add("hidden");
-      }
     });
   });
 
@@ -739,32 +829,93 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
-  // Image upload click triggers file dialog
+  // ================= MULTI-IMAGE UPLOAD LOGIC =================
+  const MAX_UPLOAD_IMAGES = 5;
+  let loadedImages = []; // Array of base64 data URLs for the item being created
+
+  const renderMultiPreviewGrid = () => {
+    dom.multiPreviewGrid.innerHTML = "";
+
+    loadedImages.forEach((imgSrc, index) => {
+      const previewItem = document.createElement("div");
+      previewItem.className = "multi-preview-item";
+      previewItem.innerHTML = `
+        <img src="${imgSrc}" alt="รูปที่ ${index + 1}">
+        ${index === 0 ? '<span class="multi-preview-cover-badge">รูปหลัก</span>' : ""}
+        <button type="button" class="multi-preview-remove" data-index="${index}" title="ลบรูปนี้">×</button>
+      `;
+      previewItem.querySelector(".multi-preview-remove").addEventListener("click", (e) => {
+        e.stopPropagation();
+        loadedImages.splice(index, 1);
+        renderMultiPreviewGrid();
+      });
+      dom.multiPreviewGrid.appendChild(previewItem);
+    });
+
+    // Hide the drop-zone instructions once the max is reached, otherwise keep it interactive
+    if (loadedImages.length >= MAX_UPLOAD_IMAGES) {
+      dom.polaroidUploadArea.classList.add("upload-zone-full");
+    } else {
+      dom.polaroidUploadArea.classList.remove("upload-zone-full");
+    }
+  };
+
+  const handleFilesSelected = (files) => {
+    const fileArray = Array.from(files).filter(f => f.type.startsWith("image/"));
+
+    if (fileArray.length === 0) return;
+
+    const remainingSlots = MAX_UPLOAD_IMAGES - loadedImages.length;
+    if (remainingSlots <= 0) {
+      alert(`อัปโหลดได้สูงสุด ${MAX_UPLOAD_IMAGES} รูปเท่านั้น!`);
+      return;
+    }
+
+    const filesToLoad = fileArray.slice(0, remainingSlots);
+    if (fileArray.length > remainingSlots) {
+      alert(`อัปโหลดได้สูงสุด ${MAX_UPLOAD_IMAGES} รูป เลือกเพิ่มได้อีก ${remainingSlots} รูป`);
+    }
+
+    filesToLoad.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        loadedImages.push(event.target.result);
+        renderMultiPreviewGrid();
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Click zone triggers file dialog
   dom.polaroidUploadArea.addEventListener("click", () => {
+    if (loadedImages.length >= MAX_UPLOAD_IMAGES) return;
     dom.imageUploadInput.click();
   });
 
-  let loadedBase64Image = "";
+  // Drag-and-drop support
+  dom.polaroidUploadArea.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    dom.polaroidUploadArea.classList.add("drag-over");
+  });
+
+  dom.polaroidUploadArea.addEventListener("dragleave", () => {
+    dom.polaroidUploadArea.classList.remove("drag-over");
+  });
+
+  dom.polaroidUploadArea.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dom.polaroidUploadArea.classList.remove("drag-over");
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFilesSelected(e.dataTransfer.files);
+    }
+  });
 
   dom.imageUploadInput.addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      loadedBase64Image = event.target.result;
-      
-      // Show Preview
-      dom.uploadImgPreview.src = loadedBase64Image;
-      dom.uploadImgPreview.classList.remove("hidden");
-      dom.uploadPlaceholder.classList.add("hidden");
-
-      // Draw Selected Sticker overlay
-      const activeSticker = document.querySelector('input[name="decor-sticker"]:checked').value;
-      dom.uploadStickerOverlay.innerHTML = window.SVG_ASSETS[activeSticker];
-      dom.uploadStickerOverlay.classList.remove("hidden");
-    };
-    reader.readAsDataURL(file);
+    if (e.target.files && e.target.files.length > 0) {
+      handleFilesSelected(e.target.files);
+    }
+    // Reset so selecting the same file(s) again still fires "change"
+    e.target.value = "";
   });
 
   // Submit adding data form
@@ -787,8 +938,8 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    if (!loadedBase64Image) {
-      alert("กรุณาเลือกรูปภาพอัปโหลดประกอบพอร์ตโฟลิโอของคุณ!");
+    if (loadedImages.length === 0) {
+      alert("กรุณาเลือกรูปภาพอัปโหลดประกอบพอร์ตโฟลิโอของคุณ อย่างน้อย 1 รูป!");
       return;
     }
 
@@ -801,7 +952,8 @@ document.addEventListener("DOMContentLoaded", () => {
       date,
       subjectCode: type === "summary" ? subjectCode : "",
       description,
-      image: loadedBase64Image,
+      images: [...loadedImages],
+      image: loadedImages[0], // Kept for backward compatibility with older saved items
       sticker
     };
 
@@ -815,12 +967,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Reset Form
     dom.addItemForm.reset();
-    loadedBase64Image = "";
-    dom.uploadImgPreview.src = "#";
-    dom.uploadImgPreview.classList.add("hidden");
-    dom.uploadPlaceholder.classList.remove("hidden");
-    dom.uploadStickerOverlay.classList.add("hidden");
-    
+    loadedImages = [];
+    renderMultiPreviewGrid();
+
     // Switch active radio triggers reset
     dom.typeRadioLabels.forEach(l => l.classList.remove("active"));
     dom.labelTypePortfolio.classList.add("active");
@@ -860,27 +1009,56 @@ document.addEventListener("DOMContentLoaded", () => {
     e.stopPropagation(); // Avoid closing
   });
 
-  // Handle choosing avatar
+  // Helper: persist a partial update to the logged-in user (state + currentUser + users DB)
+  const persistUserUpdate = (updates) => {
+    Object.assign(state.currentUser, updates);
+    localStorage.setItem("currentUser", JSON.stringify(state.currentUser));
+
+    const usersList = JSON.parse(localStorage.getItem("scrapbookUsers") || "[]");
+    const targetUser = usersList.find(u => u.username === state.currentUser.username);
+    if (targetUser) {
+      Object.assign(targetUser, updates);
+      localStorage.setItem("scrapbookUsers", JSON.stringify(usersList));
+    }
+  };
+
+  // Handle choosing a preset character avatar
   document.querySelectorAll(".avatar-choice-item").forEach(choice => {
     choice.addEventListener("click", () => {
       const avatarName = choice.getAttribute("data-avatar");
-      
-      // Save avatar in state
-      state.currentUser.avatar = avatarName;
-      localStorage.setItem("currentUser", JSON.stringify(state.currentUser));
 
-      // Save in users DB list
-      const usersList = JSON.parse(localStorage.getItem("scrapbookUsers") || "[]");
-      const targetUser = usersList.find(u => u.username === state.currentUser.username);
-      if (targetUser) {
-        targetUser.avatar = avatarName;
-        localStorage.setItem("scrapbookUsers", JSON.stringify(usersList));
-      }
+      // Picking a preset character clears any previously uploaded custom photo
+      persistUserUpdate({ avatar: avatarName, avatarImage: "" });
 
       updateAvatarsDOM();
       dom.avatarPickerModal.classList.add("hidden");
     });
   });
+
+  // Handle uploading a custom profile photo
+  if (dom.avatarUploadInput) {
+    dom.avatarUploadInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (!file.type.startsWith("image/")) {
+        alert("กรุณาเลือกไฟล์รูปภาพเท่านั้น!");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target.result;
+        persistUserUpdate({ avatarImage: dataUrl });
+        updateAvatarsDOM();
+        dom.avatarPickerModal.classList.add("hidden");
+      };
+      reader.readAsDataURL(file);
+
+      // Reset input so selecting the same file again still fires "change"
+      e.target.value = "";
+    });
+  }
 
   // Profile fields edit
   dom.btnEditProfile.addEventListener("click", () => {
@@ -896,18 +1074,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   dom.btnSaveProfile.addEventListener("click", () => {
     const updatedBio = dom.profileBioEdit.value.trim();
-    
-    // Update local state
-    state.currentUser.bio = updatedBio;
-    localStorage.setItem("currentUser", JSON.stringify(state.currentUser));
 
-    // Save in users DB list
-    const usersList = JSON.parse(localStorage.getItem("scrapbookUsers") || "[]");
-    const targetUser = usersList.find(u => u.username === state.currentUser.username);
-    if (targetUser) {
-      targetUser.bio = updatedBio;
-      localStorage.setItem("scrapbookUsers", JSON.stringify(usersList));
-    }
+    persistUserUpdate({ bio: updatedBio });
 
     // Refresh display details
     dom.profileBioText.textContent = updatedBio;
