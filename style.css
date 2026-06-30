@@ -222,7 +222,13 @@ textarea {
 .auth-subtitle {
   color: var(--color-text-sub);
   font-size: 14px;
-  margin-bottom: 30px;
+  margin-bottom: 8px;
+}
+
+.auth-help {
+  color: var(--color-text-sub);
+  font-size: 13px;
+  margin-bottom: 24px;
 }
 
 .auth-form {
@@ -258,6 +264,21 @@ textarea {
   font-size: 13.5px;
   margin-top: 10px;
   color: var(--color-text-sub);
+}
+
+.auth-status {
+  min-height: 20px;
+  font-size: 13px;
+  color: var(--color-text-sub);
+}
+
+.auth-status-error {
+  color: #b74242;
+}
+
+.btn:disabled {
+  opacity: 0.75;
+  cursor: wait;
 }
 
 /* ================= DESKTOP HEADER & NAVIGATION ================= */
@@ -894,22 +915,6 @@ textarea {
   animation: wiggle 0.5s ease infinite alternate;
 }
 
-.polaroid-multi-badge {
-  position: absolute;
-  bottom: 8px;
-  right: 8px;
-  z-index: 4;
-  background: rgba(0, 0, 0, 0.6);
-  color: white;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-}
-
 @keyframes wiggle {
   0% {
     transform: rotate(-8deg);
@@ -1196,32 +1201,37 @@ textarea {
   padding: 15px;
 }
 
-.multi-upload-zone {
-  width: 100%;
-  min-height: 160px;
+.polaroid-upload-frame {
+  width: 240px;
+  height: 280px;
   background: white;
-  border: 2px dashed var(--color-border-light);
-  border-radius: var(--border-radius-sm);
-  padding: 24px 16px;
+  border: 1px solid rgba(139, 94, 60, 0.15);
+  box-shadow: var(--shadow-md);
+  padding: 14px 14px 34px 14px;
   cursor: pointer;
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  transition: transform 0.2s ease;
+}
+
+.polaroid-upload-frame:hover {
+  transform: scale(1.02) rotate(-1deg);
+}
+
+.photo-placeholder-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
-  transition: all 0.2s ease;
-}
-
-.multi-upload-zone:hover,
-.multi-upload-zone.drag-over {
-  border-color: var(--color-orange-fox);
-  background: rgba(224, 122, 95, 0.05);
-  transform: scale(1.005);
-}
-
-.multi-upload-zone.upload-zone-full {
-  cursor: not-allowed;
-  opacity: 0.55;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border: 2px dashed var(--color-border-light);
+  border-radius: 8px;
+  padding: 10px;
 }
 
 .upload-icon-svg {
@@ -1242,68 +1252,24 @@ textarea {
   margin-top: 4px;
 }
 
-.hidden-file-input {
-  display: none;
-}
-
-/* Multi-image preview thumbnail grid */
-.multi-preview-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-  gap: 10px;
-  margin-top: 14px;
-}
-
-.multi-preview-item {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1.5px solid var(--color-border-light);
-  box-shadow: var(--shadow-sm);
-}
-
-.multi-preview-item img {
+.preview-img-tag {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
+  border-radius: 4px;
 }
 
-.multi-preview-cover-badge {
+.photo-sticker-preview-overlay {
   position: absolute;
-  bottom: 4px;
-  left: 4px;
-  background: rgba(139, 94, 60, 0.85);
-  color: white;
-  font-size: 9.5px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 6px;
+  top: 20px;
+  right: 20px;
+  width: 50px;
+  height: 50px;
+  z-index: 4;
 }
 
-.multi-preview-remove {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(0, 0, 0, 0.55);
-  color: white;
-  font-size: 13px;
-  line-height: 1;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s ease;
-}
-
-.multi-preview-remove:hover {
-  background: var(--color-orange-fox);
+.hidden-file-input {
+  display: none;
 }
 
 .btn-submit-scrapbook {
@@ -1417,35 +1383,6 @@ textarea {
 .avatar-choice-item:hover {
   border-color: var(--color-orange-fox);
   transform: scale(1.1);
-}
-
-.avatar-picker-divider {
-  text-align: center;
-  font-size: 11px;
-  color: var(--color-text-sub);
-  margin: 10px 0 8px;
-}
-
-.avatar-upload-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 100%;
-  padding: 9px 10px;
-  border: 1.5px dashed var(--color-border-light);
-  border-radius: var(--border-radius-sm);
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--color-text-main);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.avatar-upload-btn:hover {
-  border-color: var(--color-orange-fox);
-  background: rgba(224, 122, 95, 0.06);
-  color: var(--color-orange-fox);
 }
 
 .profile-stats-block {
@@ -1699,78 +1636,6 @@ textarea {
   display: block;
 }
 
-/* Image gallery navigation (multi-image items) */
-.modal-gallery-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  justify-content: center;
-}
-
-.gallery-nav-btn {
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 1.5px solid var(--color-border-light);
-  background: white;
-  color: var(--color-text-main);
-  font-size: 20px;
-  line-height: 1;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: var(--shadow-sm);
-  transition: all 0.2s ease;
-}
-
-.gallery-nav-btn:hover {
-  background: var(--color-orange-fox);
-  color: white;
-  border-color: var(--color-orange-fox);
-  transform: scale(1.08);
-}
-
-.gallery-counter {
-  position: absolute;
-  top: 22px;
-  right: 22px;
-  background: rgba(0, 0, 0, 0.55);
-  color: white;
-  font-size: 11.5px;
-  font-weight: 700;
-  padding: 3px 9px;
-  border-radius: 10px;
-  z-index: 5;
-}
-
-.gallery-dots {
-  display: flex;
-  justify-content: center;
-  gap: 7px;
-  margin-top: 14px;
-}
-
-.gallery-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--color-border-light);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.gallery-dot.active {
-  background: var(--color-orange-fox);
-  transform: scale(1.25);
-}
-
-.gallery-dot:hover {
-  background: var(--color-orange-light);
-}
-
 /* Download Overlay on Polaroid hover */
 .btn-download-overlay {
   position: absolute;
@@ -2010,24 +1875,5 @@ textarea {
 
   .modal-description-wrapper {
     max-height: 200px;
-  }
-
-  /* Gallery nav buttons smaller on mobile */
-  .gallery-nav-btn {
-    width: 30px;
-    height: 30px;
-    font-size: 17px;
-  }
-
-  /* Avatar picker modal re-centered under the now-centered profile avatar */
-  .avatar-picker-modal {
-    left: 50%;
-    transform: translateX(-50%);
-  }
-
-  /* Multi-image upload preview thumbnails slightly smaller on narrow screens */
-  .multi-preview-grid {
-    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
-    gap: 8px;
   }
 }
