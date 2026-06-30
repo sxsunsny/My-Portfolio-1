@@ -222,13 +222,7 @@ textarea {
 .auth-subtitle {
   color: var(--color-text-sub);
   font-size: 14px;
-  margin-bottom: 8px;
-}
-
-.auth-help {
-  color: var(--color-text-sub);
-  font-size: 13px;
-  margin-bottom: 24px;
+  margin-bottom: 30px;
 }
 
 .auth-form {
@@ -264,21 +258,6 @@ textarea {
   font-size: 13.5px;
   margin-top: 10px;
   color: var(--color-text-sub);
-}
-
-.auth-status {
-  min-height: 20px;
-  font-size: 13px;
-  color: var(--color-text-sub);
-}
-
-.auth-status-error {
-  color: #b74242;
-}
-
-.btn:disabled {
-  opacity: 0.75;
-  cursor: wait;
 }
 
 /* ================= DESKTOP HEADER & NAVIGATION ================= */

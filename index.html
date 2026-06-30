@@ -14,11 +14,6 @@
   <!-- Stylesheet -->
   <link rel="stylesheet" href="style.css">
   <!-- Scripts -->
-  <script>
-    window.SUPABASE_URL = "";
-    window.SUPABASE_ANON_KEY = "";
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="svg-assets.js" defer></script>
   <script src="app.js" defer></script>
 </head>
@@ -39,14 +34,12 @@
 
       <h1 class="auth-title">Rabbit & Fox</h1>
       <p class="auth-subtitle">สะสมผลงานและสรุปรายวิชาสุดน่ารัก</p>
-      <p class="auth-help">เข้าสู่ระบบหรือสมัครด้วยอีเมลผ่าน Supabase</p>
-      <p class="auth-status" id="auth-status" aria-live="polite"></p>
 
       <!-- Login Form -->
       <form id="login-form" class="auth-form">
         <h2 class="form-title">เข้าสู่ระบบ</h2>
         <div class="input-group">
-          <input type="email" id="login-email" required placeholder="อีเมล">
+          <input type="text" id="login-username" required placeholder="ชื่อผู้ใช้งาน">
         </div>
         <div class="input-group">
           <input type="password" id="login-password" required placeholder="รหัสผ่าน">
@@ -60,9 +53,6 @@
         <h2 class="form-title">สมัครสมาชิก</h2>
         <div class="input-group">
           <input type="text" id="register-name" required placeholder="ชื่อจริง/ชื่อเล่น">
-        </div>
-        <div class="input-group">
-          <input type="email" id="register-email" required placeholder="อีเมล">
         </div>
         <div class="input-group">
           <input type="text" id="register-username" required placeholder="ชื่อผู้ใช้งาน">

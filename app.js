@@ -238,82 +238,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // ================= AUTHENTICATION LOGIC =================
-  const supabaseUrl = window.SUPABASE_URL || "";
-  const supabaseAnonKey = window.SUPABASE_ANON_KEY || "";
-  let supabase = null;
-
-  const isSupabaseConfigured = () => {
-    return Boolean(supabaseUrl && supabaseAnonKey && !supabaseUrl.includes("your-project-ref"));
-  };
-
-  if (isSupabaseConfigured() && window.supabase) {
-    supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
-  }
-
-  const showAuthMessage = (message, isError = false) => {
-    const statusEl = document.getElementById("auth-status");
-    if (!statusEl) return;
-    statusEl.textContent = message;
-    statusEl.classList.toggle("auth-status-error", isError);
-  };
-
-  const setAuthButtonsLoading = (loading) => {
-    const buttons = document.querySelectorAll("#login-form button[type='submit'], #register-form button[type='submit']");
-    buttons.forEach(button => {
-      button.disabled = loading;
-      if (loading) {
-        button.dataset.originalLabel = button.textContent;
-        button.textContent = "กำลังประมวลผล...";
-      } else if (button.dataset.originalLabel) {
-        button.textContent = button.dataset.originalLabel;
-      }
-    });
-  };
-
-  const getStoredUsers = () => JSON.parse(localStorage.getItem("scrapbookUsers") || "[]");
-  const saveStoredUsers = (users) => localStorage.setItem("scrapbookUsers", JSON.stringify(users));
-
-  const buildLocalUser = ({ email, username, name, password, avatar = "nick", bio = "" }) => ({
-    id: `local-${Date.now()}`,
-    email,
-    username,
-    password,
-    name,
-    bio,
-    avatar
-  });
-
-  const persistAuthenticatedUser = (userData) => {
-    localStorage.setItem("currentUser", JSON.stringify(userData));
-    state.currentUser = userData;
-  };
-
-  const applyAuthenticatedUser = (userData) => {
-    persistAuthenticatedUser(userData);
-    loadUserData();
-    dom.authGate.classList.add("hidden");
-    dom.appContainer.classList.remove("hidden");
-    navigateTo("home");
-    showAuthMessage("เข้าสู่ระบบสำเร็จ");
-  };
-
-  const checkAuthStatus = async () => {
-    if (supabase) {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (!error && session?.user) {
-        const profileData = {
-          id: session.user.id,
-          email: session.user.email || "",
-          username: session.user.user_metadata?.username || (session.user.email || "").split("@")[0],
-          name: session.user.user_metadata?.name || session.user.email || "Supabase User",
-          bio: session.user.user_metadata?.bio || "ยินดีต้อนรับสู่พอร์ตโฟลิโอที่เชื่อมต่อกับ Supabase แล้ว",
-          avatar: session.user.user_metadata?.avatar || "judy"
-        };
-        applyAuthenticatedUser(profileData);
-        return;
-      }
-    }
-
+  const checkAuthStatus = () => {
     const userJson = localStorage.getItem("currentUser");
     if (userJson) {
       state.currentUser = JSON.parse(userJson);
@@ -330,11 +255,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const loadUserData = () => {
     // Load portfolio items
     const allItems = JSON.parse(localStorage.getItem("scrapbookItems") || "[]");
-    const username = state.currentUser?.username || state.currentUser?.email?.split("@")[0] || "";
-    state.items = allItems.filter(item => item.username === username);
+    state.items = allItems.filter(item => item.username === state.currentUser.username);
 
     // If a fresh new admin/user is logged in, seed with default gorgeous data
-    if (state.items.length === 0 && username === "admin") {
+    if (state.items.length === 0 && state.currentUser.username === "admin") {
       state.items = [...DEFAULT_SEED_ITEMS];
       localStorage.setItem("scrapbookItems", JSON.stringify(state.items));
     }
@@ -342,7 +266,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Set layout texts
     dom.headerUsernameText.textContent = state.currentUser.name || state.currentUser.username;
     dom.profileDisplayName.textContent = state.currentUser.name || state.currentUser.username;
-    dom.profileUsernameTag.textContent = state.currentUser.username || username;
+    dom.profileUsernameTag.textContent = state.currentUser.username;
     dom.profileBioText.textContent = state.currentUser.bio || "ยินดีต้อนรับสู่พอร์ตโฟลิโอสะสมผลงานแสนน่ารัก!";
     
     // Set avatars
@@ -358,159 +282,75 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  const handleLogin = async (e) => {
+  const handleLogin = (e) => {
     e.preventDefault();
-    setAuthButtonsLoading(true);
-    showAuthMessage("");
-
-    const email = document.getElementById("login-email").value.trim().toLowerCase();
+    const username = document.getElementById("login-username").value.trim().toLowerCase();
     const password = document.getElementById("login-password").value;
 
-    const users = getStoredUsers();
-
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        if (!error && data?.user) {
-          const profileData = {
-            id: data.user.id,
-            email: data.user.email || email,
-            username: data.user.user_metadata?.username || email.split("@")[0],
-            name: data.user.user_metadata?.name || email.split("@")[0],
-            bio: data.user.user_metadata?.bio || "ยินดีต้อนรับสู่พอร์ตโฟลิโอที่เชื่อมต่อกับ Supabase แล้ว",
-            avatar: data.user.user_metadata?.avatar || "judy"
-          };
-
-          let existingUser = users.find(u => u.email === email || u.username === profileData.username);
-          if (!existingUser) {
-            existingUser = buildLocalUser({ email, username: profileData.username, name: profileData.name, password, avatar: profileData.avatar, bio: profileData.bio });
-            users.push(existingUser);
-            saveStoredUsers(users);
-          }
-
-          applyAuthenticatedUser(profileData);
-          dom.loginForm.reset();
-          setAuthButtonsLoading(false);
-          return;
-        }
-
-        if (error) {
-          showAuthMessage(error.message, true);
-        }
-      } catch (err) {
-        showAuthMessage("ไม่สามารถเชื่อมต่อ Supabase ได้: " + err.message, true);
-      }
-    }
-
-    let user = users.find(u => u.email === email || u.username === email);
-
+    const users = JSON.parse(localStorage.getItem("scrapbookUsers") || "[]");
+    
     // Seed default admin account if not exists
-    if (!user && email === "admin" && password === "admin") {
-      user = buildLocalUser({ email: "admin", username: "admin", name: "Judy & Nick", password: "admin", avatar: "judy", bio: "Anyone can be anything! ยินดีต้อนรับสู่พอร์ตโฟลิโอแสนอบอุ่น ที่รวบรวมผลงานและสรุปบทเรียนไว้ในแบบของพวกเรา!" });
+    let user = users.find(u => u.username === username);
+    if (!user && username === "admin" && password === "admin") {
+      user = { username: "admin", password: "admin", name: "Judy & Nick", bio: "Anyone can be anything! ยินดีต้อนรับสู่พอร์ตโฟลิโอแสนอบอุ่น ที่รวบรวมผลงานและสรุปบทเรียนไว้ในแบบของพวกเรา!", avatar: "judy" };
       users.push(user);
-      saveStoredUsers(users);
+      localStorage.setItem("scrapbookUsers", JSON.stringify(users));
     }
 
     if (user && user.password === password) {
-      applyAuthenticatedUser({ ...user, username: user.username || email.split("@")[0] });
+      localStorage.setItem("currentUser", JSON.stringify(user));
+      checkAuthStatus();
       dom.loginForm.reset();
     } else {
-      showAuthMessage("อีเมลหรือรหัสผ่านไม่ถูกต้อง", true);
+      alert("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง (ใบใบ้: ลองใช้ admin / admin)");
     }
-
-    setAuthButtonsLoading(false);
   };
 
-  const handleRegister = async (e) => {
+  const handleRegister = (e) => {
     e.preventDefault();
-    setAuthButtonsLoading(true);
-    showAuthMessage("");
-
     const name = document.getElementById("register-name").value.trim();
-    const email = document.getElementById("register-email").value.trim().toLowerCase();
     const username = document.getElementById("register-username").value.trim().toLowerCase();
     const password = document.getElementById("register-password").value;
 
-    const users = getStoredUsers();
+    const users = JSON.parse(localStorage.getItem("scrapbookUsers") || "[]");
     
-    if (users.some(u => u.email === email || u.username === username)) {
-      showAuthMessage("อีเมลหรือชื่อผู้ใช้งานนี้ถูกใช้ไปแล้ว", true);
-      setAuthButtonsLoading(false);
+    if (users.some(u => u.username === username)) {
+      alert("ชื่อผู้ใช้งานนี้ถูกใช้ไปแล้ว!");
       return;
     }
 
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              name,
-              username,
-              avatar: "nick"
-            }
-          }
-        });
+    const newUser = {
+      username,
+      password,
+      name,
+      bio: `ยินดีต้อนรับสู่พอร์ตโฟลิโอสะสมผลงานของ ${name}!`,
+      avatar: "nick"
+    };
 
-        if (!error && data?.user) {
-          const profileData = {
-            id: data.user.id,
-            email: data.user.email || email,
-            username: data.user.user_metadata?.username || username,
-            name: data.user.user_metadata?.name || name,
-            bio: `ยินดีต้อนรับสู่พอร์ตโฟลิโอสะสมผลงานของ ${name}!`,
-            avatar: data.user.user_metadata?.avatar || "nick"
-          };
-
-          const newUser = buildLocalUser({ email, username, name, password, avatar: profileData.avatar, bio: profileData.bio });
-          users.push(newUser);
-          saveStoredUsers(users);
-          applyAuthenticatedUser(profileData);
-          dom.registerForm.reset();
-          setAuthButtonsLoading(false);
-          return;
-        }
-
-        if (error) {
-          showAuthMessage(error.message, true);
-        }
-      } catch (err) {
-        showAuthMessage("ไม่สามารถเชื่อมต่อ Supabase ได้: " + err.message, true);
-      }
-    }
-
-    const newUser = buildLocalUser({ email, username, name, password, avatar: "nick", bio: `ยินดีต้อนรับสู่พอร์ตโฟลิโอสะสมผลงานของ ${name}!` });
     users.push(newUser);
-    saveStoredUsers(users);
-    applyAuthenticatedUser({ ...newUser, username });
+    localStorage.setItem("scrapbookUsers", JSON.stringify(users));
+    localStorage.setItem("currentUser", JSON.stringify(newUser));
+    checkAuthStatus();
     dom.registerForm.reset();
-    setAuthButtonsLoading(false);
   };
 
-  const handleLogout = async () => {
-    if (supabase) {
-      await supabase.auth.signOut();
-    }
+  const handleLogout = () => {
     localStorage.removeItem("currentUser");
     state.currentUser = null;
     state.items = [];
     state.selectedFolder = null;
-    showAuthMessage("");
     checkAuthStatus();
   };
 
   // Auth switch actions
   dom.switchToRegister.addEventListener("click", (e) => {
     e.preventDefault();
-    showAuthMessage("");
     dom.loginForm.classList.add("hidden");
     dom.registerForm.classList.remove("hidden");
   });
 
   dom.switchToLogin.addEventListener("click", (e) => {
     e.preventDefault();
-    showAuthMessage("");
     dom.registerForm.classList.add("hidden");
     dom.loginForm.classList.remove("hidden");
   });
@@ -519,8 +359,6 @@ document.addEventListener("DOMContentLoaded", () => {
   dom.registerForm.addEventListener("submit", handleRegister);
   dom.btnLogoutProfile.addEventListener("click", handleLogout);
   dom.btnLogoutDesktop.addEventListener("click", handleLogout);
-
-  checkAuthStatus();
 
   // ================= HOME PAGE DATA RENDERING =================
   
