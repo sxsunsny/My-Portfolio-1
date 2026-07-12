@@ -65,20 +65,20 @@ document.addEventListener("DOMContentLoaded", () => {
     authGate: document.getElementById("auth-gate"),
     appContainer: document.getElementById("app-container"),
     authStatus: document.getElementById("auth-status"),
-    
+
     // Auth Forms
     loginForm: document.getElementById("login-form"),
     registerForm: document.getElementById("register-form"),
     switchToRegister: document.getElementById("switchToRegister") || document.getElementById("switch-to-register"),
     switchToLogin: document.getElementById("switchToLogin") || document.getElementById("switch-to-login"),
-    
+
     // Nav Items
     desktopNavItems: document.querySelectorAll(".desktop-nav .nav-item"),
     mobileNavItems: document.querySelectorAll(".mobile-nav-bar .mobile-nav-item"),
-    
+
     // Pages / Views
     views: document.querySelectorAll(".page-view"),
-    
+
     // Home View Elements
     filterTabs: document.querySelectorAll(".filter-tab"),
     foldersContainer: document.getElementById("folders-container"),
@@ -88,7 +88,7 @@ document.addEventListener("DOMContentLoaded", () => {
     emptyStateView: document.getElementById("empty-state-view"),
     searchInput: document.getElementById("search-input"),
     btnSearchTrigger: document.getElementById("btn-search-trigger"),
-    
+
     // Add View Elements
     addItemForm: document.getElementById("add-item-form"),
     typeRadioLabels: document.querySelectorAll(".type-radio-label"),
@@ -101,12 +101,11 @@ document.addEventListener("DOMContentLoaded", () => {
     addDate: document.getElementById("add-date"),
     addDescription: document.getElementById("add-description"),
     stickerOptions: document.querySelectorAll(".sticker-option"),
-    polaroidUploadArea: document.getElementById("polaroid-upload-area"),
+    labelTypePortfolio: document.getElementById("label-type-portfolio"),
+    multiUploadZone: document.getElementById("multi-upload-zone"),
     imageUploadInput: document.getElementById("image-upload-input"),
-    uploadPlaceholder: document.getElementById("upload-placeholder"),
-    uploadImgPreview: document.getElementById("upload-img-preview"),
-    uploadStickerOverlay: document.getElementById("upload-sticker-overlay"),
-    
+    multiPreviewGrid: document.getElementById("multi-preview-grid"),
+
     // Profile View Elements
     profileDisplayName: document.getElementById("profile-display-name"),
     profileUsernameTag: document.getElementById("profile-username-tag"),
@@ -116,7 +115,7 @@ document.addEventListener("DOMContentLoaded", () => {
     btnSaveProfile: document.getElementById("btn-save-profile"),
     btnLogoutProfile: document.getElementById("btn-logout-profile"),
     btnLogoutDesktop: document.getElementById("btn-logout-desktop"),
-    
+
     // Stats Count
     countFolders: document.getElementById("count-folders"),
     countPortfolios: document.getElementById("count-portfolios"),
@@ -126,7 +125,7 @@ document.addEventListener("DOMContentLoaded", () => {
     profileAvatarBig: document.getElementById("profile-avatar-big"),
     btnEditAvatarTrigger: document.getElementById("btn-edit-avatar-trigger"),
     avatarPickerModal: document.getElementById("avatar-picker-modal"),
-    
+
     // Detail Modal Elements
     detailModal: document.getElementById("detail-modal"),
     modalCloseTrigger: document.getElementById("modal-close-trigger"),
@@ -362,7 +361,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const loadUserData = async () => {
     const username = state.currentUser?.username || state.currentUser?.email?.split("@")[0] || "";
-    
+
     if (firebaseDb) {
       try {
         const querySnapshot = await firebaseDb.collection("items")
@@ -393,7 +392,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     updateAvatarsDOM();
     populateFolderDropdown();
-    
+
     // Rerender items when data is loaded
     if (dom.foldersContainer) {
       renderFolders();
@@ -501,9 +500,9 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         const userCredential = await firebaseAuth.createUserWithEmailAndPassword(email, password);
         const user = userCredential.user;
-        
+
         await user.updateProfile({ displayName: username });
-        
+
         const profileData = {
           id: user.uid,
           email: user.email || email,
@@ -520,7 +519,7 @@ document.addEventListener("DOMContentLoaded", () => {
           users.push(newUser);
           saveStoredUsers(users);
         }
-        
+
         applyAuthenticatedUser(profileData);
         dom.registerForm.reset();
         setAuthButtonsLoading(false);
@@ -575,7 +574,7 @@ document.addEventListener("DOMContentLoaded", () => {
   checkAuthStatus();
 
   // ================= HOME PAGE DATA RENDERING =================
-  
+
   // Filter tabs click (All / Portfolio / Summary)
   dom.filterTabs.forEach(tab => {
     tab.addEventListener("click", () => {
@@ -592,12 +591,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const getFilteredItems = () => {
     let list = state.items;
-    
+
     // Filter type (portfolio / summary)
     if (state.currentFilterType !== "all") {
       list = list.filter(item => item.type === state.currentFilterType);
     }
-    
+
     // Filter folder
     if (state.selectedFolder) {
       list = list.filter(item => item.folder === state.selectedFolder);
@@ -606,7 +605,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Filter Search
     const searchVal = dom.searchInput.value.trim().toLowerCase();
     if (searchVal) {
-      list = list.filter(item => 
+      list = list.filter(item =>
         item.title.toLowerCase().includes(searchVal) ||
         item.folder.toLowerCase().includes(searchVal) ||
         item.description.toLowerCase().includes(searchVal) ||
@@ -619,12 +618,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const renderFolders = () => {
     dom.foldersContainer.innerHTML = "";
-    
+
     // Calculate folder statistics
     const foldersMap = {};
-    const itemsForFolderStats = state.currentFilterType === "all" ? 
+    const itemsForFolderStats = state.currentFilterType === "all" ?
       state.items : state.items.filter(i => i.type === state.currentFilterType);
-      
+
     itemsForFolderStats.forEach(item => {
       if (!foldersMap[item.folder]) {
         foldersMap[item.folder] = { count: 0, type: item.type };
@@ -643,7 +642,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const folderInfo = foldersMap[folderName];
       const folderCard = document.createElement("div");
       folderCard.className = `folder-card folder-type-${folderInfo.type} ${state.selectedFolder === folderName ? "selected" : ""}`;
-      
+
       const iconSVG = folderInfo.type === "portfolio" ? window.SVG_ASSETS.folder : window.SVG_ASSETS.summary;
 
       folderCard.innerHTML = `
@@ -744,7 +743,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const deleteItem = async (id) => {
     // Delete in state
     state.items = state.items.filter(item => item.id !== id);
-    
+
     // Save to database
     if (firebaseDb) {
       try {
@@ -758,7 +757,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const updatedStored = allStoredItems.filter(item => !(item.id === id && item.username === state.currentUser.username));
       localStorage.setItem("scrapbookItems", JSON.stringify(updatedStored));
     }
-    
+
     // Refresh GUI
     renderFolders();
     renderItems();
@@ -770,7 +769,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const openDetailModal = (item) => {
     modalActiveItem = item;
-    
+
     // Set text and image
     dom.modalImg.src = item.image || 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800';
     dom.modalImg.alt = item.title;
@@ -824,7 +823,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Download logic function
   const triggerImageDownload = async () => {
     if (!modalActiveItem) return;
-    
+
     const imgUrl = modalActiveItem.image;
     const cleanTitle = modalActiveItem.title.replace(/[^a-zA-Z0-9\u0E00-\u0E7F\s-_]/g, '').trim() || 'image';
     const filename = `${cleanTitle}-${modalActiveItem.date}.png`;
@@ -900,16 +899,16 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ================= ADD NEW ITEM SCREEN LOGIC =================
-  
+
   // Toggle Portfolio / Summary form type
   dom.typeRadioLabels.forEach(label => {
     label.addEventListener("click", () => {
       dom.typeRadioLabels.forEach(l => l.classList.remove("active"));
       label.classList.add("active");
-      
+
       const input = label.querySelector("input");
       const value = input.value;
-      
+
       if (value === "summary") {
         dom.colSubjectCode.classList.remove("hidden");
         dom.labelTitleText.textContent = "ชื่อหัวข้อสรุปรายวิชา";
@@ -930,16 +929,9 @@ document.addEventListener("DOMContentLoaded", () => {
       dom.stickerOptions.forEach(o => o.classList.remove("active"));
       opt.classList.add("active");
       const stickerVal = opt.querySelector("input").value;
-      
+
       // Update preview sticker overlap
-      if (dom.uploadImgPreview.classList.contains("hidden")) return;
-      
-      if (window.SVG_ASSETS[stickerVal]) {
-        dom.uploadStickerOverlay.innerHTML = window.SVG_ASSETS[stickerVal];
-        dom.uploadStickerOverlay.classList.remove("hidden");
-      } else {
-        dom.uploadStickerOverlay.classList.add("hidden");
-      }
+      // Removed since we use multiPreviewGrid now without overlay preview
     });
   });
 
@@ -947,7 +939,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const populateFolderDropdown = () => {
     const activeType = document.querySelector('input[name="item-type"]:checked').value;
     dom.addFolderSelect.innerHTML = `<option value="">-- สร้างโฟลเดอร์ใหม่ --</option>`;
-    
+
     // Get unique folders for current active type
     const folderSet = new Set();
     state.items.filter(item => item.type === activeType).forEach(item => {
@@ -963,32 +955,31 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // Image upload click triggers file dialog
-  dom.polaroidUploadArea.addEventListener("click", () => {
-    dom.imageUploadInput.click();
-  });
+  if (dom.multiUploadZone) {
+    dom.multiUploadZone.addEventListener("click", () => {
+      if (dom.imageUploadInput) dom.imageUploadInput.click();
+    });
+  }
 
   let loadedBase64Image = "";
 
-  dom.imageUploadInput.addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  if (dom.imageUploadInput) {
+    dom.imageUploadInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      loadedBase64Image = event.target.result;
-      
-      // Show Preview
-      dom.uploadImgPreview.src = loadedBase64Image;
-      dom.uploadImgPreview.classList.remove("hidden");
-      dom.uploadPlaceholder.classList.add("hidden");
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        loadedBase64Image = event.target.result;
 
-      // Draw Selected Sticker overlay
-      const activeSticker = document.querySelector('input[name="decor-sticker"]:checked').value;
-      dom.uploadStickerOverlay.innerHTML = window.SVG_ASSETS[activeSticker];
-      dom.uploadStickerOverlay.classList.remove("hidden");
-    };
-    reader.readAsDataURL(file);
-  });
+        // Show Preview
+        if (dom.multiPreviewGrid) {
+          dom.multiPreviewGrid.innerHTML = `<img src="${loadedBase64Image}" style="width:100px; height:100px; object-fit:cover; border-radius:8px;">`;
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  }
 
   // Submit adding data form
   dom.addItemForm.addEventListener("submit", async (e) => {
@@ -1048,11 +1039,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // Reset Form
     dom.addItemForm.reset();
     loadedBase64Image = "";
-    dom.uploadImgPreview.src = "#";
-    dom.uploadImgPreview.classList.add("hidden");
-    dom.uploadPlaceholder.classList.remove("hidden");
-    dom.uploadStickerOverlay.classList.add("hidden");
-    
+    if (dom.multiPreviewGrid) {
+      dom.multiPreviewGrid.innerHTML = "";
+    }
+
     // Switch active radio triggers reset
     dom.typeRadioLabels.forEach(l => l.classList.remove("active"));
     dom.labelTypePortfolio.classList.add("active");
@@ -1065,7 +1055,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ================= PROFILE EDIT AND AVATAR SELECTION =================
-  
+
   // Stats Calculator
   const updateProfileStats = () => {
     const portfolios = state.items.filter(item => item.type === "portfolio").length;
@@ -1096,7 +1086,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll(".avatar-choice-item").forEach(choice => {
     choice.addEventListener("click", async () => {
       const avatarName = choice.getAttribute("data-avatar");
-      
+
       // Save avatar in state
       state.currentUser.avatar = avatarName;
       localStorage.setItem("currentUser", JSON.stringify(state.currentUser));
@@ -1128,7 +1118,7 @@ document.addEventListener("DOMContentLoaded", () => {
     dom.profileBioText.classList.add("hidden");
     dom.profileBioEdit.classList.remove("hidden");
     dom.profileBioEdit.value = dom.profileBioText.textContent;
-    
+
     // Toggle buttons
     dom.btnEditProfile.classList.add("hidden");
     dom.btnSaveProfile.classList.remove("hidden");
@@ -1136,7 +1126,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   dom.btnSaveProfile.addEventListener("click", async () => {
     const updatedBio = dom.profileBioEdit.value.trim();
-    
+
     // Update local state
     state.currentUser.bio = updatedBio;
     localStorage.setItem("currentUser", JSON.stringify(state.currentUser));
@@ -1161,7 +1151,7 @@ document.addEventListener("DOMContentLoaded", () => {
     dom.profileBioText.textContent = updatedBio;
     dom.profileBioText.classList.remove("hidden");
     dom.profileBioEdit.classList.add("hidden");
-    
+
     dom.btnEditProfile.classList.remove("hidden");
     dom.btnSaveProfile.classList.add("hidden");
   });
@@ -1169,7 +1159,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ================= UTILITIES & HELPERS =================
   const escapeHTML = (str) => {
     if (!str) return "";
-    return str.replace(/[&<>'"]/g, 
+    return str.replace(/[&<>'"]/g,
       tag => ({
         '&': '&amp;',
         '<': '&lt;',
