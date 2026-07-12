@@ -366,11 +366,13 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         const querySnapshot = await firebaseDb.collection("items")
           .where("username", "==", username)
-          .orderBy("date", "desc")
           .get();
         state.items = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // Sort items by date descending locally to avoid Firestore composite index requirement
+        state.items.sort((a, b) => new Date(b.date) - new Date(a.date));
       } catch (err) {
         console.error("Error loading items from Firestore:", err);
+        alert("ไม่สามารถโหลดข้อมูลจาก Database ได้: " + err.message);
         state.items = [];
       }
     } else {
