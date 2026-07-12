@@ -64,6 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const dom = {
     authGate: document.getElementById("auth-gate"),
     appContainer: document.getElementById("app-container"),
+    authStatus: document.getElementById("auth-status"),
     
     // Auth Forms
     loginForm: document.getElementById("login-form"),
@@ -185,36 +186,33 @@ document.addEventListener("DOMContentLoaded", () => {
   // ================= ROUTING & SCREEN SYSTEM =================
   const navigateTo = (viewName) => {
     state.currentView = viewName;
-    
-    // Hide all views, display the selected one
-    dom.views.forEach(view => {
+
+    dom.views.forEach((view) => {
       view.classList.remove("active");
       if (view.id === `view-${viewName}`) {
         view.classList.add("active");
       }
     });
 
-    // Update active nav items (both Desktop & Mobile)
     const updateNavClasses = (navElements) => {
-      navElements.forEach(item => {
-        item.classList.remove("active");
-        if (item.getAttribute("data-target") === viewName) {
-          item.classList.add("active");
-        }
+      navElements.forEach((item) => {
+        const isActive = item.getAttribute("data-target") === viewName;
+        item.classList.toggle("active", isActive);
       });
     };
 
     updateNavClasses(dom.desktopNavItems);
     updateNavClasses(dom.mobileNavItems);
 
-    // Dynamic headers based on navigation
     const heroBanner = document.getElementById("hero-banner");
-    if (viewName === "home") {
-      heroBanner.classList.remove("hidden");
-      renderFolders();
-      renderItems();
-    } else {
-      heroBanner.classList.add("hidden");
+    if (heroBanner) {
+      if (viewName === "home") {
+        heroBanner.classList.remove("hidden");
+        renderFolders();
+        renderItems();
+      } else {
+        heroBanner.classList.add("hidden");
+      }
     }
 
     if (viewName === "profile") {
@@ -225,10 +223,13 @@ document.addEventListener("DOMContentLoaded", () => {
   // Attach nav click handlers
   const initNavigation = () => {
     const bindNavClick = (navItems) => {
-      navItems.forEach(item => {
-        item.addEventListener("click", () => {
+      navItems.forEach((item) => {
+        item.addEventListener("click", (event) => {
+          event.preventDefault();
           const target = item.getAttribute("data-target");
-          navigateTo(target);
+          if (target) {
+            navigateTo(target);
+          }
         });
       });
     };
@@ -238,40 +239,166 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // ================= AUTHENTICATION LOGIC =================
-  const checkAuthStatus = () => {
-    const userJson = localStorage.getItem("currentUser");
-    if (userJson) {
-      state.currentUser = JSON.parse(userJson);
-      loadUserData();
-      dom.authGate.classList.add("hidden");
-      dom.appContainer.classList.remove("hidden");
-      navigateTo("home");
-    } else {
-      dom.authGate.classList.remove("hidden");
-      dom.appContainer.classList.add("hidden");
+  const firebaseConfig = window.FIREBASE_CONFIG || {};
+  let firebaseApp = null;
+  let firebaseAuth = null;
+  let firebaseDb = null;
+
+  const isFirebaseConfigured = () => {
+    return Boolean(firebaseConfig.apiKey && firebaseConfig.projectId);
+  };
+
+  if (isFirebaseConfigured() && window.firebase) {
+    firebaseApp = window.firebase.initializeApp(firebaseConfig);
+    firebaseAuth = window.firebase.auth(); // using compat version
+    if (window.firebase.firestore) {
+      firebaseDb = window.firebase.firestore();
+    }
+  }
+
+  const showAuthMessage = (message, isError = false) => {
+    if (!dom.authStatus) return;
+    dom.authStatus.textContent = message;
+    dom.authStatus.classList.toggle("auth-status-error", isError);
+  };
+
+  const setAuthButtonsLoading = (loading) => {
+    const buttons = document.querySelectorAll("#login-form button[type='submit'], #register-form button[type='submit']");
+    buttons.forEach((button) => {
+      button.disabled = loading;
+      if (loading) {
+        button.dataset.originalLabel = button.textContent;
+        button.textContent = "กำลังประมวลผล...";
+      } else if (button.dataset.originalLabel) {
+        button.textContent = button.dataset.originalLabel;
+      }
+    });
+  };
+
+  const getStoredUsers = () => JSON.parse(localStorage.getItem("scrapbookUsers") || "[]");
+  const saveStoredUsers = (users) => localStorage.setItem("scrapbookUsers", JSON.stringify(users));
+
+  const buildLocalUser = ({ email, username, name, password, avatar = "nick", bio = "" }) => ({
+    id: `local-${Date.now()}`,
+    email,
+    username,
+    password,
+    name,
+    bio,
+    avatar
+  });
+
+  const persistAuthenticatedUser = (userData) => {
+    localStorage.setItem("currentUser", JSON.stringify(userData));
+    state.currentUser = userData;
+  };
+
+  const applyAuthenticatedUser = (userData) => {
+    persistAuthenticatedUser(userData);
+    loadUserData();
+    dom.authGate.classList.add("hidden");
+    dom.appContainer.classList.remove("hidden");
+    navigateTo("home");
+    showAuthMessage("เข้าสู่ระบบสำเร็จ");
+  };
+
+  const checkAuthStatus = async () => {
+    if (firebaseAuth) {
+      firebaseAuth.onAuthStateChanged(async user => {
+        if (user) {
+          const profileData = {
+            id: user.uid,
+            email: user.email || "",
+            username: user.displayName || (user.email || "").split("@")[0],
+            name: user.displayName || user.email || "Firebase User",
+            bio: "ยินดีต้อนรับสู่พอร์ตโฟลิโอที่เชื่อมต่อกับ Firebase แล้ว",
+            avatar: "judy"
+          };
+          if (firebaseDb) {
+            try {
+              const userDoc = await firebaseDb.collection("users").doc(user.uid).get();
+              if (userDoc.exists) {
+                Object.assign(profileData, userDoc.data());
+              } else {
+                await firebaseDb.collection("users").doc(user.uid).set(profileData);
+              }
+            } catch (err) {
+              console.error("Error fetching user from Firestore:", err);
+            }
+          } else {
+            const users = getStoredUsers();
+            const existingUser = users.find(u => u.email === profileData.email);
+            if (existingUser) {
+              profileData.username = existingUser.username || profileData.username;
+              profileData.bio = existingUser.bio || profileData.bio;
+              profileData.avatar = existingUser.avatar || profileData.avatar;
+              profileData.name = existingUser.name || profileData.name;
+            }
+          }
+          applyAuthenticatedUser(profileData);
+        } else {
+          fallbackLocalAuth();
+        }
+      });
+      return;
+    }
+
+    fallbackLocalAuth();
+
+    function fallbackLocalAuth() {
+      const userJson = localStorage.getItem("currentUser");
+      if (userJson) {
+        state.currentUser = JSON.parse(userJson);
+        loadUserData();
+        dom.authGate.classList.add("hidden");
+        dom.appContainer.classList.remove("hidden");
+        navigateTo("home");
+      } else {
+        dom.authGate.classList.remove("hidden");
+        dom.appContainer.classList.add("hidden");
+      }
     }
   };
 
-  const loadUserData = () => {
-    // Load portfolio items
-    const allItems = JSON.parse(localStorage.getItem("scrapbookItems") || "[]");
-    state.items = allItems.filter(item => item.username === state.currentUser.username);
-
-    // If a fresh new admin/user is logged in, seed with default gorgeous data
-    if (state.items.length === 0 && state.currentUser.username === "admin") {
-      state.items = [...DEFAULT_SEED_ITEMS];
-      localStorage.setItem("scrapbookItems", JSON.stringify(state.items));
+  const loadUserData = async () => {
+    const username = state.currentUser?.username || state.currentUser?.email?.split("@")[0] || "";
+    
+    if (firebaseDb) {
+      try {
+        const querySnapshot = await firebaseDb.collection("items")
+          .where("username", "==", username)
+          .orderBy("date", "desc")
+          .get();
+        state.items = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      } catch (err) {
+        console.error("Error loading items from Firestore:", err);
+        state.items = [];
+      }
+    } else {
+      const allItems = JSON.parse(localStorage.getItem("scrapbookItems") || "[]");
+      state.items = allItems.filter(item => item.username === username);
     }
 
-    // Set layout texts
-    dom.headerUsernameText.textContent = state.currentUser.name || state.currentUser.username;
-    dom.profileDisplayName.textContent = state.currentUser.name || state.currentUser.username;
-    dom.profileUsernameTag.textContent = state.currentUser.username;
+    if (state.items.length === 0 && username === "admin") {
+      state.items = [...DEFAULT_SEED_ITEMS];
+      if (!firebaseDb) {
+        localStorage.setItem("scrapbookItems", JSON.stringify(state.items));
+      }
+    }
+
+    dom.headerUsernameText.textContent = state.currentUser.name || state.currentUser.username || username;
+    dom.profileDisplayName.textContent = state.currentUser.name || state.currentUser.username || username;
+    dom.profileUsernameTag.textContent = state.currentUser.username || username;
     dom.profileBioText.textContent = state.currentUser.bio || "ยินดีต้อนรับสู่พอร์ตโฟลิโอสะสมผลงานแสนน่ารัก!";
-    
-    // Set avatars
+
     updateAvatarsDOM();
     populateFolderDropdown();
+    
+    // Rerender items when data is loaded
+    if (dom.foldersContainer) {
+      renderFolders();
+      renderItems();
+    }
   };
 
   const updateAvatarsDOM = () => {
@@ -282,75 +409,160 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    const username = document.getElementById("login-username").value.trim().toLowerCase();
-    const password = document.getElementById("login-password").value;
+    setAuthButtonsLoading(true);
+    showAuthMessage("");
 
-    const users = JSON.parse(localStorage.getItem("scrapbookUsers") || "[]");
-    
-    // Seed default admin account if not exists
-    let user = users.find(u => u.username === username);
-    if (!user && username === "admin" && password === "admin") {
-      user = { username: "admin", password: "admin", name: "Judy & Nick", bio: "Anyone can be anything! ยินดีต้อนรับสู่พอร์ตโฟลิโอแสนอบอุ่น ที่รวบรวมผลงานและสรุปบทเรียนไว้ในแบบของพวกเรา!", avatar: "judy" };
+    const email = document.getElementById("login-email").value.trim().toLowerCase();
+    const password = document.getElementById("login-password").value;
+    const users = getStoredUsers();
+
+    if (firebaseAuth) {
+      try {
+        const userCredential = await firebaseAuth.signInWithEmailAndPassword(email, password);
+        const user = userCredential.user;
+        const profileData = {
+          id: user.uid,
+          email: user.email || email,
+          username: user.displayName || email.split("@")[0],
+          name: user.displayName || email.split("@")[0],
+          bio: "ยินดีต้อนรับสู่พอร์ตโฟลิโอที่เชื่อมต่อกับ Firebase แล้ว",
+          avatar: "judy"
+        };
+
+        if (firebaseDb) {
+          const userDoc = await firebaseDb.collection("users").doc(user.uid).get();
+          if (userDoc.exists) {
+            Object.assign(profileData, userDoc.data());
+          } else {
+            await firebaseDb.collection("users").doc(user.uid).set(profileData);
+          }
+        } else {
+          let existingUser = users.find(u => u.email === email);
+          if (!existingUser) {
+            existingUser = buildLocalUser({ email, username: profileData.username, name: profileData.name, password, avatar: profileData.avatar, bio: profileData.bio });
+            users.push(existingUser);
+            saveStoredUsers(users);
+          } else {
+            profileData.bio = existingUser.bio || profileData.bio;
+            profileData.avatar = existingUser.avatar || profileData.avatar;
+            profileData.username = existingUser.username || profileData.username;
+            profileData.name = existingUser.name || profileData.name;
+          }
+        }
+
+        applyAuthenticatedUser(profileData);
+        dom.loginForm.reset();
+        setAuthButtonsLoading(false);
+        return;
+      } catch (err) {
+        showAuthMessage("ไม่สามารถเข้าสู่ระบบด้วย Firebase ได้: " + err.message, true);
+        setAuthButtonsLoading(false);
+        return;
+      }
+    }
+
+    let user = users.find(u => u.email === email || u.username === email);
+    if (!user && email === "admin" && password === "admin") {
+      user = buildLocalUser({ email: "admin", username: "admin", name: "Judy & Nick", password: "admin", avatar: "judy", bio: "Anyone can be anything! ยินดีต้อนรับสู่พอร์ตโฟลิโอแสนอบอุ่น ที่รวบรวมผลงานและสรุปบทเรียนไว้ในแบบของพวกเรา!" });
       users.push(user);
-      localStorage.setItem("scrapbookUsers", JSON.stringify(users));
+      saveStoredUsers(users);
     }
 
     if (user && user.password === password) {
-      localStorage.setItem("currentUser", JSON.stringify(user));
-      checkAuthStatus();
+      applyAuthenticatedUser({ ...user, username: user.username || email.split("@")[0] });
       dom.loginForm.reset();
     } else {
-      alert("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง (ใบใบ้: ลองใช้ admin / admin)");
+      showAuthMessage("อีเมลหรือรหัสผ่านไม่ถูกต้อง", true);
     }
+
+    setAuthButtonsLoading(false);
   };
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
+    setAuthButtonsLoading(true);
+    showAuthMessage("");
+
     const name = document.getElementById("register-name").value.trim();
+    const email = document.getElementById("register-email").value.trim().toLowerCase();
     const username = document.getElementById("register-username").value.trim().toLowerCase();
     const password = document.getElementById("register-password").value;
+    const users = getStoredUsers();
 
-    const users = JSON.parse(localStorage.getItem("scrapbookUsers") || "[]");
-    
-    if (users.some(u => u.username === username)) {
-      alert("ชื่อผู้ใช้งานนี้ถูกใช้ไปแล้ว!");
+    if (!firebaseDb && users.some(u => u.email === email || u.username === username)) {
+      showAuthMessage("อีเมลหรือชื่อผู้ใช้งานนี้ถูกใช้ไปแล้ว (Local)", true);
+      setAuthButtonsLoading(false);
       return;
     }
 
-    const newUser = {
-      username,
-      password,
-      name,
-      bio: `ยินดีต้อนรับสู่พอร์ตโฟลิโอสะสมผลงานของ ${name}!`,
-      avatar: "nick"
-    };
+    if (firebaseAuth) {
+      try {
+        const userCredential = await firebaseAuth.createUserWithEmailAndPassword(email, password);
+        const user = userCredential.user;
+        
+        await user.updateProfile({ displayName: username });
+        
+        const profileData = {
+          id: user.uid,
+          email: user.email || email,
+          username: username,
+          name: name,
+          bio: `ยินดีต้อนรับสู่พอร์ตโฟลิโอสะสมผลงานของ ${name}!`,
+          avatar: "nick"
+        };
 
+        if (firebaseDb) {
+          await firebaseDb.collection("users").doc(user.uid).set(profileData);
+        } else {
+          const newUser = buildLocalUser({ email, username, name, password, avatar: profileData.avatar, bio: profileData.bio });
+          users.push(newUser);
+          saveStoredUsers(users);
+        }
+        
+        applyAuthenticatedUser(profileData);
+        dom.registerForm.reset();
+        setAuthButtonsLoading(false);
+        return;
+      } catch (err) {
+        showAuthMessage("ไม่สามารถสมัครสมาชิกด้วย Firebase ได้: " + err.message, true);
+        setAuthButtonsLoading(false);
+        return;
+      }
+    }
+
+    const newUser = buildLocalUser({ email, username, name, password, avatar: "nick", bio: `ยินดีต้อนรับสู่พอร์ตโฟลิโอสะสมผลงานของ ${name}!` });
     users.push(newUser);
-    localStorage.setItem("scrapbookUsers", JSON.stringify(users));
-    localStorage.setItem("currentUser", JSON.stringify(newUser));
-    checkAuthStatus();
+    saveStoredUsers(users);
+    applyAuthenticatedUser({ ...newUser, username });
     dom.registerForm.reset();
+    setAuthButtonsLoading(false);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (firebaseAuth) {
+      await firebaseAuth.signOut();
+    }
     localStorage.removeItem("currentUser");
     state.currentUser = null;
     state.items = [];
     state.selectedFolder = null;
+    showAuthMessage("");
     checkAuthStatus();
   };
 
   // Auth switch actions
   dom.switchToRegister.addEventListener("click", (e) => {
     e.preventDefault();
+    showAuthMessage("");
     dom.loginForm.classList.add("hidden");
     dom.registerForm.classList.remove("hidden");
   });
 
   dom.switchToLogin.addEventListener("click", (e) => {
     e.preventDefault();
+    showAuthMessage("");
     dom.registerForm.classList.add("hidden");
     dom.loginForm.classList.remove("hidden");
   });
@@ -359,6 +571,8 @@ document.addEventListener("DOMContentLoaded", () => {
   dom.registerForm.addEventListener("submit", handleRegister);
   dom.btnLogoutProfile.addEventListener("click", handleLogout);
   dom.btnLogoutDesktop.addEventListener("click", handleLogout);
+
+  checkAuthStatus();
 
   // ================= HOME PAGE DATA RENDERING =================
   
@@ -527,14 +741,23 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
-  const deleteItem = (id) => {
+  const deleteItem = async (id) => {
     // Delete in state
     state.items = state.items.filter(item => item.id !== id);
     
-    // Save to localStorage
-    const allStoredItems = JSON.parse(localStorage.getItem("scrapbookItems") || "[]");
-    const updatedStored = allStoredItems.filter(item => !(item.id === id && item.username === state.currentUser.username));
-    localStorage.setItem("scrapbookItems", JSON.stringify(updatedStored));
+    // Save to database
+    if (firebaseDb) {
+      try {
+        await firebaseDb.collection("items").doc(id).delete();
+      } catch (err) {
+        console.error("Error deleting document: ", err);
+        alert("เกิดข้อผิดพลาดในการลบข้อมูลจากฐานข้อมูล");
+      }
+    } else {
+      const allStoredItems = JSON.parse(localStorage.getItem("scrapbookItems") || "[]");
+      const updatedStored = allStoredItems.filter(item => !(item.id === id && item.username === state.currentUser.username));
+      localStorage.setItem("scrapbookItems", JSON.stringify(updatedStored));
+    }
     
     // Refresh GUI
     renderFolders();
@@ -768,7 +991,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Submit adding data form
-  dom.addItemForm.addEventListener("submit", (e) => {
+  dom.addItemForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     const type = document.querySelector('input[name="item-type"]:checked').value;
@@ -808,10 +1031,19 @@ document.addEventListener("DOMContentLoaded", () => {
     // Save to state
     state.items.unshift(newItem);
 
-    // Save to localStorage
-    const allStoredItems = JSON.parse(localStorage.getItem("scrapbookItems") || "[]");
-    allStoredItems.unshift(newItem);
-    localStorage.setItem("scrapbookItems", JSON.stringify(allStoredItems));
+    // Save to database
+    if (firebaseDb) {
+      try {
+        await firebaseDb.collection("items").doc(newItem.id).set(newItem);
+      } catch (err) {
+        console.error("Error adding document: ", err);
+        alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+      }
+    } else {
+      const allStoredItems = JSON.parse(localStorage.getItem("scrapbookItems") || "[]");
+      allStoredItems.unshift(newItem);
+      localStorage.setItem("scrapbookItems", JSON.stringify(allStoredItems));
+    }
 
     // Reset Form
     dom.addItemForm.reset();
@@ -862,19 +1094,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Handle choosing avatar
   document.querySelectorAll(".avatar-choice-item").forEach(choice => {
-    choice.addEventListener("click", () => {
+    choice.addEventListener("click", async () => {
       const avatarName = choice.getAttribute("data-avatar");
       
       // Save avatar in state
       state.currentUser.avatar = avatarName;
       localStorage.setItem("currentUser", JSON.stringify(state.currentUser));
 
-      // Save in users DB list
-      const usersList = JSON.parse(localStorage.getItem("scrapbookUsers") || "[]");
-      const targetUser = usersList.find(u => u.username === state.currentUser.username);
-      if (targetUser) {
-        targetUser.avatar = avatarName;
-        localStorage.setItem("scrapbookUsers", JSON.stringify(usersList));
+      if (firebaseDb && state.currentUser.id) {
+        try {
+          await firebaseDb.collection("users").doc(state.currentUser.id).update({ avatar: avatarName });
+        } catch (err) {
+          console.error("Error updating avatar: ", err);
+        }
+      } else {
+        // Save in users DB list
+        const usersList = JSON.parse(localStorage.getItem("scrapbookUsers") || "[]");
+        const targetUser = usersList.find(u => u.username === state.currentUser.username);
+        if (targetUser) {
+          targetUser.avatar = avatarName;
+          localStorage.setItem("scrapbookUsers", JSON.stringify(usersList));
+        }
       }
 
       updateAvatarsDOM();
@@ -894,19 +1134,27 @@ document.addEventListener("DOMContentLoaded", () => {
     dom.btnSaveProfile.classList.remove("hidden");
   });
 
-  dom.btnSaveProfile.addEventListener("click", () => {
+  dom.btnSaveProfile.addEventListener("click", async () => {
     const updatedBio = dom.profileBioEdit.value.trim();
     
     // Update local state
     state.currentUser.bio = updatedBio;
     localStorage.setItem("currentUser", JSON.stringify(state.currentUser));
 
-    // Save in users DB list
-    const usersList = JSON.parse(localStorage.getItem("scrapbookUsers") || "[]");
-    const targetUser = usersList.find(u => u.username === state.currentUser.username);
-    if (targetUser) {
-      targetUser.bio = updatedBio;
-      localStorage.setItem("scrapbookUsers", JSON.stringify(usersList));
+    if (firebaseDb && state.currentUser.id) {
+      try {
+        await firebaseDb.collection("users").doc(state.currentUser.id).update({ bio: updatedBio });
+      } catch (err) {
+        console.error("Error updating bio: ", err);
+      }
+    } else {
+      // Save in users DB list
+      const usersList = JSON.parse(localStorage.getItem("scrapbookUsers") || "[]");
+      const targetUser = usersList.find(u => u.username === state.currentUser.username);
+      if (targetUser) {
+        targetUser.bio = updatedBio;
+        localStorage.setItem("scrapbookUsers", JSON.stringify(usersList));
+      }
     }
 
     // Refresh display details

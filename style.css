@@ -222,7 +222,24 @@ textarea {
 .auth-subtitle {
   color: var(--color-text-sub);
   font-size: 14px;
-  margin-bottom: 30px;
+  margin-bottom: 8px;
+}
+
+.auth-help {
+  color: var(--color-text-sub);
+  font-size: 13px;
+  margin-bottom: 18px;
+}
+
+.auth-status {
+  min-height: 20px;
+  font-size: 13px;
+  color: var(--color-text-sub);
+  margin-bottom: 12px;
+}
+
+.auth-status-error {
+  color: #b74242;
 }
 
 .auth-form {
