@@ -152,7 +152,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Theme Toggle Buttons
     btnThemeToggle: document.getElementById("btn-theme-toggle"),
-    btnThemeToggleMobile: document.getElementById("btn-theme-toggle-mobile")
+    btnThemeToggleMobile: document.getElementById("btn-theme-toggle-mobile"),
+
+    // Share & Flipbook Elements
+    btnModalShare: document.getElementById("btn-modal-share"),
+    btnOpenFlipbook: document.getElementById("btn-open-flipbook"),
+    toastContainer: document.getElementById("toast-container"),
+
+    // Flipbook Modal Elements
+    flipbookModal: document.getElementById("flipbook-modal"),
+    flipbookCloseTrigger: document.getElementById("flipbook-close-trigger"),
+    flipbookTitleDisplay: document.getElementById("flipbook-title-display"),
+    flipBtnPrev: document.getElementById("flip-btn-prev"),
+    flipBtnNext: document.getElementById("flip-btn-next"),
+    flipbookPageNum: document.getElementById("flipbook-page-num"),
+    flipPageLeft: document.getElementById("flip-page-left"),
+    flipPageRight: document.getElementById("flip-page-right"),
+    flipLeftContent: document.getElementById("flip-left-content"),
+    flipRightContent: document.getElementById("flip-right-content"),
+    flipLeftNum: document.getElementById("flip-left-num"),
+    flipRightNum: document.getElementById("flip-right-num")
   };
 
   // ================= INJECT VECTOR SVGS =================
@@ -769,6 +788,170 @@ document.addEventListener("DOMContentLoaded", () => {
     populateFolderDropdown();
   };
 
+  // Toast notification helper
+  const showToast = (message) => {
+    if (!dom.toastContainer) return;
+    const toast = document.createElement("div");
+    toast.className = "toast-message";
+    toast.innerHTML = `<span>✨ ${escapeHTML(message)}</span>`;
+    dom.toastContainer.appendChild(toast);
+
+    setTimeout(() => {
+      toast.classList.add("toast-fade-out");
+      toast.addEventListener("animationend", () => toast.remove());
+    }, 3000);
+  };
+
+  // Share item logic
+  const handleShareItem = async (item) => {
+    if (!item) return;
+    const shareUrl = `${window.location.origin}${window.location.pathname}?item=${item.id}`;
+    const shareData = {
+      title: `${item.title} — Rabbit & Fox`,
+      text: item.description,
+      url: shareUrl
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err) {
+        if (err.name !== "AbortError") {
+          console.warn("Native share failed, falling back to clipboard:", err);
+        } else {
+          return;
+        }
+      }
+    }
+
+    // Fallback: Copy to Clipboard
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      showToast("คัดลอกลิงก์สรุปเรียบร้อยแล้ว! ส่งต่อให้เพื่อนได้เลย 🔗");
+    } catch (err) {
+      // Secondary fallback using textarea
+      const tempInput = document.createElement("textarea");
+      tempInput.value = shareUrl;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand("copy");
+      document.body.removeChild(tempInput);
+      showToast("คัดลอกลิงก์สรุปเรียบร้อยแล้ว! 🔗");
+    }
+  };
+
+  // Check URL query parameters for auto-opening shared item
+  const checkSharedUrlItem = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedItemId = urlParams.get("item");
+    if (sharedItemId) {
+      const foundItem = state.items.find(i => i.id === sharedItemId);
+      if (foundItem) {
+        setTimeout(() => {
+          openDetailModal(foundItem);
+          showToast(`เปิดสรุปที่แชร์: ${foundItem.title} 📖`);
+        }, 500);
+      }
+    }
+  };
+
+  // ================= 3D FLIPBOOK VIEWER LOGIC =================
+  let flipbookPages = []; // Array of image URLs/Canvas data
+  let currentFlipPageIndex = 0; // Current spread index (0 = page 1&2)
+
+  const openFlipbookModal = async (item) => {
+    if (!item) return;
+    flipbookPages = [];
+    currentFlipPageIndex = 0;
+
+    dom.flipbookTitleDisplay.textContent = `📖 ${item.title}`;
+
+    if (item.pages && item.pages.length > 0) {
+      flipbookPages = item.pages;
+    } else if (item.image) {
+      flipbookPages = [item.image];
+    }
+
+    renderFlipbookSpread();
+    dom.flipbookModal.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+  };
+
+  const closeFlipbookModal = () => {
+    dom.flipbookModal.classList.add("hidden");
+    if (dom.detailModal.classList.contains("hidden")) {
+      document.body.style.overflow = "";
+    }
+  };
+
+  const renderFlipbookSpread = () => {
+    const totalPages = flipbookPages.length;
+    if (totalPages === 0) return;
+
+    const leftPageIndex = currentFlipPageIndex * 2;
+    const rightPageIndex = leftPageIndex + 1;
+
+    // Render Left Page
+    if (leftPageIndex < totalPages) {
+      dom.flipLeftContent.innerHTML = `<img src="${flipbookPages[leftPageIndex]}" alt="Page ${leftPageIndex + 1}">`;
+      dom.flipLeftNum.textContent = `หน้า ${leftPageIndex + 1}`;
+    } else {
+      dom.flipLeftContent.innerHTML = `<div class="empty-page-text">ปกหลัง</div>`;
+      dom.flipLeftNum.textContent = "";
+    }
+
+    // Render Right Page
+    if (rightPageIndex < totalPages) {
+      dom.flipRightContent.innerHTML = `<img src="${flipbookPages[rightPageIndex]}" alt="Page ${rightPageIndex + 1}">`;
+      dom.flipRightNum.textContent = `หน้า ${rightPageIndex + 1}`;
+    } else {
+      dom.flipRightContent.innerHTML = `<div class="empty-page-text">จบเล่ม</div>`;
+      dom.flipRightNum.textContent = "";
+    }
+
+    const totalSpreads = Math.ceil(totalPages / 2);
+    dom.flipbookPageNum.textContent = `หน้า ${leftPageIndex + 1}-${Math.min(rightPageIndex + 1, totalPages)} / ${totalPages}`;
+
+    dom.flipBtnPrev.disabled = currentFlipPageIndex === 0;
+    dom.flipBtnNext.disabled = rightPageIndex >= totalPages - 1 || leftPageIndex >= totalPages - 1;
+  };
+
+  if (dom.flipBtnPrev) {
+    dom.flipBtnPrev.addEventListener("click", () => {
+      if (currentFlipPageIndex > 0) {
+        currentFlipPageIndex--;
+        renderFlipbookSpread();
+      }
+    });
+  }
+
+  if (dom.flipBtnNext) {
+    dom.flipBtnNext.addEventListener("click", () => {
+      const totalPages = flipbookPages.length;
+      if ((currentFlipPageIndex + 1) * 2 < totalPages) {
+        currentFlipPageIndex++;
+        renderFlipbookSpread();
+      }
+    });
+  }
+
+  if (dom.flipbookCloseTrigger) {
+    dom.flipbookCloseTrigger.addEventListener("click", closeFlipbookModal);
+  }
+
+  if (dom.btnOpenFlipbook) {
+    dom.btnOpenFlipbook.addEventListener("click", () => {
+      if (modalActiveItem) openFlipbookModal(modalActiveItem);
+    });
+  }
+
+  if (dom.btnModalShare) {
+    dom.btnModalShare.addEventListener("click", () => {
+      if (modalActiveItem) handleShareItem(modalActiveItem);
+    });
+  }
+
   // ================= DETAIL MODAL LOGIC =================
   let modalActiveItem = null;
 
@@ -1094,22 +1277,79 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   let loadedBase64Image = "";
+  let loadedBookPages = []; // Stores array of pages (image DataURLs)
+
+  // PDF to Image pages generator using PDF.js
+  const convertPdfToPages = async (file) => {
+    if (!window.pdfjsLib) return [];
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const pages = [];
+
+      for (let i = 1; i <= Math.min(pdf.numPages, 20); i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 1.2 });
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        await page.render({ canvasContext: context, viewport: viewport }).promise;
+        pages.push(canvas.toDataURL("image/jpeg", 0.85));
+      }
+      return pages;
+    } catch (err) {
+      console.error("PDF parsing error:", err);
+      showToast("ไม่สามารถเรนเดอร์ไฟล์ PDF ได้ โปรดลองไฟล์อื่น");
+      return [];
+    }
+  };
 
   if (dom.imageUploadInput) {
-    dom.imageUploadInput.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
+    dom.imageUploadInput.addEventListener("change", async (e) => {
+      const files = Array.from(e.target.files);
+      if (files.length === 0) return;
 
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        loadedBase64Image = event.target.result;
+      loadedBookPages = [];
+      loadedBase64Image = "";
+      if (dom.multiPreviewGrid) dom.multiPreviewGrid.innerHTML = "<p>กำลังประมวลผลไฟล์... ⏳</p>";
 
-        // Show Preview
-        if (dom.multiPreviewGrid) {
-          dom.multiPreviewGrid.innerHTML = `<img src="${loadedBase64Image}" style="width:100px; height:100px; object-fit:cover; border-radius:8px;">`;
+      for (const file of files) {
+        if (file.type === "application/pdf") {
+          showToast("กำลังอ่านไฟล์ PDF และแปลงเป็นสมุดภาพ... 📄");
+          const pdfPages = await convertPdfToPages(file);
+          if (pdfPages.length > 0) {
+            loadedBookPages.push(...pdfPages);
+            if (!loadedBase64Image) loadedBase64Image = pdfPages[0];
+          }
+        } else if (file.type.startsWith("image/")) {
+          await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              const result = event.target.result;
+              loadedBookPages.push(result);
+              if (!loadedBase64Image) loadedBase64Image = result;
+              resolve();
+            };
+            reader.readAsDataURL(file);
+          });
         }
-      };
-      reader.readAsDataURL(file);
+      }
+
+      // Show Previews
+      if (dom.multiPreviewGrid) {
+        dom.multiPreviewGrid.innerHTML = "";
+        loadedBookPages.forEach((pageImg, idx) => {
+          const imgEl = document.createElement("img");
+          imgEl.src = pageImg;
+          imgEl.style.cssText = "width:80px; height:80px; object-fit:cover; border-radius:8px; border:2px solid var(--color-border-light);";
+          imgEl.title = `หน้า ${idx + 1}`;
+          dom.multiPreviewGrid.appendChild(imgEl);
+        });
+      }
+
+      showToast(`โหลดรูปภาพ/สมุดสำเร็จแล้ว ${loadedBookPages.length} หน้า ✨`);
     });
   }
 
@@ -1134,7 +1374,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (!loadedBase64Image) {
-      alert("กรุณาเลือกรูปภาพอัปโหลดประกอบพอร์ตโฟลิโอของคุณ!");
+      alert("กรุณาเลือกรูปภาพหรือไฟล์ PDF อัปโหลดประกอบบันทึกของคุณ!");
       return;
     }
 
@@ -1148,6 +1388,7 @@ document.addEventListener("DOMContentLoaded", () => {
       subjectCode: type === "summary" ? subjectCode : "",
       description,
       image: loadedBase64Image,
+      pages: loadedBookPages.length > 0 ? loadedBookPages : [loadedBase64Image],
       sticker
     };
 
@@ -1358,4 +1599,5 @@ document.addEventListener("DOMContentLoaded", () => {
   initNavigation();
   initTheme();
   checkAuthStatus();
+  checkSharedUrlItem();
 });

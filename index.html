@@ -37,6 +37,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-database-compat.js"></script>
+  <!-- PDF.js Library for PDF Flipbook -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+  </script>
   <script src="svg-assets.js" defer></script>
   <script src="app.js" defer></script>
   <link rel="stylesheet" href="style.css">
@@ -306,15 +313,14 @@
             </div>
           </div>
 
-          <!-- Image Upload Multi-Image Container -->
+          <!-- Image & PDF Upload Multi-Image Container -->
           <div class="form-row">
-            <label class="form-label">รูปภาพประกอบ <span class="label-sub">(คลิกหรือลากวางรูป · สูงสุด 5
-                รูป)</span></label>
+            <label class="form-label">รูปภาพประกอบหรือไฟล์ PDF <span class="label-sub">(คลิกหรือลากวางรูป/PDF · สูงสุด 5 ไฟล์)</span></label>
             <div class="multi-upload-zone" id="multi-upload-zone">
               <div class="upload-icon-svg" id="upload-icon-main"></div>
-              <p class="upload-txt">คลิกหรือลากวางเพื่อเพิ่มรูปภาพ</p>
-              <p class="upload-subtxt">รองรับ JPG, PNG, WEBP · อัปโหลดได้สูงสุด 5 รูป</p>
-              <input type="file" id="image-upload-input" accept="image/*" multiple class="hidden-file-input">
+              <p class="upload-txt">คลิกหรือลากวางเพื่อเพิ่มรูปภาพ หรือไฟล์ PDF สรุปวิชา 📄</p>
+              <p class="upload-subtxt">รองรับ PDF, JPG, PNG, WEBP · สามารถเปิดเป็นสมุด Flipbook ได้อัตโนมัติ!</p>
+              <input type="file" id="image-upload-input" accept="image/*,application/pdf" multiple class="hidden-file-input">
             </div>
             <div class="multi-preview-grid" id="multi-preview-grid"></div>
           </div>
@@ -454,6 +460,16 @@
           <div class="modal-description-wrapper">
             <p id="modal-desc" class="modal-description-text"></p>
           </div>
+
+          <!-- Action Toolbar: Open Flipbook & Share -->
+          <div class="modal-actions-toolbar">
+            <button class="btn btn-primary btn-open-flipbook" id="btn-open-flipbook">
+              📖 เปิดอ่านเป็นสมุด (Flipbook)
+            </button>
+            <button class="btn btn-outline btn-share-item" id="btn-modal-share">
+              🔗 แชร์ให้เพื่อน
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -485,6 +501,41 @@
       </div>
     </div>
   </div>
+
+  <!-- ================= INTERACTIVE 3D FLIPBOOK MODAL ================= -->
+  <div id="flipbook-modal" class="modal-backdrop hidden">
+    <div class="flipbook-container-card">
+      <button class="modal-close-btn flipbook-close-btn" id="flipbook-close-trigger" title="ปิดสมุด">×</button>
+      
+      <div class="flipbook-header-row">
+        <h3 class="flipbook-book-title" id="flipbook-title-display">📖 สมุดสรุปวิชา</h3>
+        <div class="flipbook-controls-bar">
+          <button class="flip-btn" id="flip-btn-prev" title="หน้าก่อนหน้า">‹ หน้าก่อน</button>
+          <span class="flipbook-page-indicator" id="flipbook-page-num">หน้า 1 / 1</span>
+          <button class="flip-btn" id="flip-btn-next" title="ถัดไป">หน้าถัดไป ›</button>
+        </div>
+      </div>
+
+      <!-- Book Stage 3D Flip Container -->
+      <div class="flipbook-stage-wrapper">
+        <div class="flipbook-book-body" id="flipbook-book-body">
+          <!-- Left & Right Pages rendered dynamically via JS -->
+          <div class="flipbook-page page-left" id="flip-page-left">
+            <div class="page-content" id="flip-left-content"></div>
+            <div class="page-footer-num" id="flip-left-num"></div>
+          </div>
+          <div class="flipbook-spine"></div>
+          <div class="flipbook-page page-right" id="flip-page-right">
+            <div class="page-content" id="flip-right-content"></div>
+            <div class="page-footer-num" id="flip-right-num"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
 
 </body>
 
