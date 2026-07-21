@@ -250,8 +250,8 @@ document.addEventListener("DOMContentLoaded", () => {
   if (isFirebaseConfigured() && window.firebase) {
     firebaseApp = window.firebase.initializeApp(firebaseConfig);
     firebaseAuth = window.firebase.auth(); // using compat version
-    if (window.firebase.firestore) {
-      firebaseDb = window.firebase.firestore();
+    if (window.firebase.database) {
+      firebaseDb = window.firebase.database();
     }
   }
 
@@ -310,23 +310,23 @@ document.addEventListener("DOMContentLoaded", () => {
             email: user.email || "",
             username: user.displayName || (user.email || "").split("@")[0],
             name: user.displayName || user.email || "Firebase User",
-            bio: "ยินดีต้อนรับสู่พอร์ตโฟลิโอที่เชื่อมต่อกับ Firebase แล้ว",
+            bio: "ยินดีต้อนรับสู่พอร์ตโฟลิโอสะสมผลงานแสนน่ารัก!",
             avatar: "judy"
           };
           if (firebaseDb) {
             try {
-              const userDoc = await firebaseDb.collection("users").doc(user.uid).get();
-              if (userDoc.exists) {
-                Object.assign(profileData, userDoc.data());
+              const snapshot = await firebaseDb.ref("users/" + user.uid).once("value");
+              if (snapshot.exists()) {
+                Object.assign(profileData, snapshot.val());
               } else {
-                await firebaseDb.collection("users").doc(user.uid).set(profileData);
+                await firebaseDb.ref("users/" + user.uid).set(profileData);
               }
             } catch (err) {
-              console.error("Error fetching user from Firestore:", err);
+              console.error("Error fetching user from RTDB:", err);
             }
           } else {
             const users = getStoredUsers();
-            const existingUser = users.find(u => u.email === profileData.email);
+            const existingUser = users.find(u => u.email === profileData.email || u.id === profileData.id);
             if (existingUser) {
               profileData.username = existingUser.username || profileData.username;
               profileData.bio = existingUser.bio || profileData.bio;
@@ -364,16 +364,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (firebaseDb) {
       try {
-        const querySnapshot = await firebaseDb.collection("items")
-          .where("username", "==", username)
-          .get();
-        state.items = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        // Sort items by date descending locally to avoid Firestore composite index requirement
-        state.items.sort((a, b) => new Date(b.date) - new Date(a.date));
+        const snapshot = await firebaseDb.ref("items")
+          .orderByChild("username")
+          .equalTo(username)
+          .once("value");
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          state.items = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+          state.items.sort((a, b) => new Date(b.date) - new Date(a.date));
+        } else {
+          state.items = [];
+        }
       } catch (err) {
-        console.error("Error loading items from Firestore:", err);
-        alert("ไม่สามารถโหลดข้อมูลจาก Database ได้: " + err.message);
-        state.items = [];
+        console.error("Error loading items from RTDB:", err);
+        const allItems = JSON.parse(localStorage.getItem("scrapbookItems") || "[]");
+        state.items = allItems.filter(item => item.username === username);
       }
     } else {
       const allItems = JSON.parse(localStorage.getItem("scrapbookItems") || "[]");
@@ -382,9 +387,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (state.items.length === 0 && username === "admin") {
       state.items = [...DEFAULT_SEED_ITEMS];
-      if (!firebaseDb) {
-        localStorage.setItem("scrapbookItems", JSON.stringify(state.items));
-      }
+      localStorage.setItem("scrapbookItems", JSON.stringify(state.items));
     }
 
     dom.headerUsernameText.textContent = state.currentUser.name || state.currentUser.username || username;
@@ -432,25 +435,16 @@ document.addEventListener("DOMContentLoaded", () => {
           avatar: "judy"
         };
 
-        if (firebaseDb) {
-          const userDoc = await firebaseDb.collection("users").doc(user.uid).get();
-          if (userDoc.exists) {
-            Object.assign(profileData, userDoc.data());
-          } else {
-            await firebaseDb.collection("users").doc(user.uid).set(profileData);
-          }
+        let existingUser = users.find(u => u.email === email);
+        if (!existingUser) {
+          existingUser = buildLocalUser({ email, username: profileData.username, name: profileData.name, password, avatar: profileData.avatar, bio: profileData.bio });
+          users.push(existingUser);
+          saveStoredUsers(users);
         } else {
-          let existingUser = users.find(u => u.email === email);
-          if (!existingUser) {
-            existingUser = buildLocalUser({ email, username: profileData.username, name: profileData.name, password, avatar: profileData.avatar, bio: profileData.bio });
-            users.push(existingUser);
-            saveStoredUsers(users);
-          } else {
-            profileData.bio = existingUser.bio || profileData.bio;
-            profileData.avatar = existingUser.avatar || profileData.avatar;
-            profileData.username = existingUser.username || profileData.username;
-            profileData.name = existingUser.name || profileData.name;
-          }
+          profileData.bio = existingUser.bio || profileData.bio;
+          profileData.avatar = existingUser.avatar || profileData.avatar;
+          profileData.username = existingUser.username || profileData.username;
+          profileData.name = existingUser.name || profileData.name;
         }
 
         applyAuthenticatedUser(profileData);
@@ -492,8 +486,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const password = document.getElementById("register-password").value;
     const users = getStoredUsers();
 
-    if (!firebaseDb && users.some(u => u.email === email || u.username === username)) {
-      showAuthMessage("อีเมลหรือชื่อผู้ใช้งานนี้ถูกใช้ไปแล้ว (Local)", true);
+    if (users.some(u => u.email === email || u.username === username)) {
+      showAuthMessage("อีเมลหรือชื่อผู้ใช้งานนี้ถูกใช้ไปแล้ว", true);
       setAuthButtonsLoading(false);
       return;
     }
@@ -514,13 +508,9 @@ document.addEventListener("DOMContentLoaded", () => {
           avatar: "nick"
         };
 
-        if (firebaseDb) {
-          await firebaseDb.collection("users").doc(user.uid).set(profileData);
-        } else {
-          const newUser = buildLocalUser({ email, username, name, password, avatar: profileData.avatar, bio: profileData.bio });
-          users.push(newUser);
-          saveStoredUsers(users);
-        }
+        const newUser = buildLocalUser({ email, username, name, password, avatar: profileData.avatar, bio: profileData.bio });
+        users.push(newUser);
+        saveStoredUsers(users);
 
         applyAuthenticatedUser(profileData);
         dom.registerForm.reset();
@@ -746,19 +736,16 @@ document.addEventListener("DOMContentLoaded", () => {
     // Delete in state
     state.items = state.items.filter(item => item.id !== id);
 
-    // Save to database
     if (firebaseDb) {
       try {
-        await firebaseDb.collection("items").doc(id).delete();
+        await firebaseDb.ref("items/" + id).remove();
       } catch (err) {
-        console.error("Error deleting document: ", err);
-        alert("เกิดข้อผิดพลาดในการลบข้อมูลจากฐานข้อมูล");
+        console.error("Error deleting from RTDB:", err);
       }
-    } else {
-      const allStoredItems = JSON.parse(localStorage.getItem("scrapbookItems") || "[]");
-      const updatedStored = allStoredItems.filter(item => !(item.id === id && item.username === state.currentUser.username));
-      localStorage.setItem("scrapbookItems", JSON.stringify(updatedStored));
     }
+    const allStoredItems = JSON.parse(localStorage.getItem("scrapbookItems") || "[]");
+    const updatedStored = allStoredItems.filter(item => !(item.id === id && item.username === state.currentUser.username));
+    localStorage.setItem("scrapbookItems", JSON.stringify(updatedStored));
 
     // Refresh GUI
     renderFolders();
@@ -1021,21 +1008,19 @@ document.addEventListener("DOMContentLoaded", () => {
       sticker
     };
 
-    // Save to state
+    // Save to state and localStorage
     state.items.unshift(newItem);
+    const allStoredItems = JSON.parse(localStorage.getItem("scrapbookItems") || "[]");
+    allStoredItems.unshift(newItem);
+    localStorage.setItem("scrapbookItems", JSON.stringify(allStoredItems));
 
-    // Save to database
     if (firebaseDb) {
       try {
-        await firebaseDb.collection("items").doc(newItem.id).set(newItem);
+        await firebaseDb.ref("items/" + newItem.id).set(newItem);
       } catch (err) {
-        console.error("Error adding document: ", err);
-        alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+        console.error("Error adding document to RTDB: ", err);
+        alert("เกิดข้อผิดพลาดในการบันทึกข้อมูลลง Firebase Realtime Database: " + err.message + "\n\n(โปรดตรวจสอบ Rules ในหน้า Realtime Database ของคุณว่าอนุญาตให้เขียนข้อมูลหรือยัง)");
       }
-    } else {
-      const allStoredItems = JSON.parse(localStorage.getItem("scrapbookItems") || "[]");
-      allStoredItems.unshift(newItem);
-      localStorage.setItem("scrapbookItems", JSON.stringify(allStoredItems));
     }
 
     // Reset Form
@@ -1093,19 +1078,18 @@ document.addEventListener("DOMContentLoaded", () => {
       state.currentUser.avatar = avatarName;
       localStorage.setItem("currentUser", JSON.stringify(state.currentUser));
 
+      const usersList = JSON.parse(localStorage.getItem("scrapbookUsers") || "[]");
+      const targetUser = usersList.find(u => u.username === state.currentUser.username || u.id === state.currentUser.id);
+      if (targetUser) {
+        targetUser.avatar = avatarName;
+        localStorage.setItem("scrapbookUsers", JSON.stringify(usersList));
+      }
+
       if (firebaseDb && state.currentUser.id) {
         try {
-          await firebaseDb.collection("users").doc(state.currentUser.id).update({ avatar: avatarName });
+          await firebaseDb.ref("users/" + state.currentUser.id).update({ avatar: avatarName });
         } catch (err) {
-          console.error("Error updating avatar: ", err);
-        }
-      } else {
-        // Save in users DB list
-        const usersList = JSON.parse(localStorage.getItem("scrapbookUsers") || "[]");
-        const targetUser = usersList.find(u => u.username === state.currentUser.username);
-        if (targetUser) {
-          targetUser.avatar = avatarName;
-          localStorage.setItem("scrapbookUsers", JSON.stringify(usersList));
+          console.error("Error updating avatar in RTDB: ", err);
         }
       }
 
@@ -1133,19 +1117,18 @@ document.addEventListener("DOMContentLoaded", () => {
     state.currentUser.bio = updatedBio;
     localStorage.setItem("currentUser", JSON.stringify(state.currentUser));
 
+    const usersList = JSON.parse(localStorage.getItem("scrapbookUsers") || "[]");
+    const targetUser = usersList.find(u => u.username === state.currentUser.username || u.id === state.currentUser.id);
+    if (targetUser) {
+      targetUser.bio = updatedBio;
+      localStorage.setItem("scrapbookUsers", JSON.stringify(usersList));
+    }
+
     if (firebaseDb && state.currentUser.id) {
       try {
-        await firebaseDb.collection("users").doc(state.currentUser.id).update({ bio: updatedBio });
+        await firebaseDb.ref("users/" + state.currentUser.id).update({ bio: updatedBio });
       } catch (err) {
-        console.error("Error updating bio: ", err);
-      }
-    } else {
-      // Save in users DB list
-      const usersList = JSON.parse(localStorage.getItem("scrapbookUsers") || "[]");
-      const targetUser = usersList.find(u => u.username === state.currentUser.username);
-      if (targetUser) {
-        targetUser.bio = updatedBio;
-        localStorage.setItem("scrapbookUsers", JSON.stringify(usersList));
+        console.error("Error updating bio in RTDB: ", err);
       }
     }
 

@@ -4,17 +4,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Portfolio</title>
-  <!-- Modern Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&family=Inter:wght@300;400;500;700&family=Mitr:wght@300;400;600&display=swap"
-    rel="stylesheet">
-  <!-- Stylesheet -->
-  <link rel="stylesheet" href="style.css">
-  <!-- Scripts -->
+  <!-- Firebase Config & SDK -->
   <script>
+    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
     window.FIREBASE_CONFIG = {
       apiKey: "AIzaSyBDzDD1JnHiEtvTzYfu9iYwGXM97UKpHoQ",
       authDomain: "my-portfolio-d0192.firebaseapp.com",
@@ -26,12 +18,12 @@
       measurementId: "G-SSJR6K534S"
     };
   </script>
-  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-database-compat.js"></script>
   <script src="svg-assets.js" defer></script>
   <script src="app.js" defer></script>
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
