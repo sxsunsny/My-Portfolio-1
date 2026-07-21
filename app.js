@@ -512,7 +512,16 @@ document.addEventListener("DOMContentLoaded", () => {
         setAuthButtonsLoading(false);
         return;
       } catch (err) {
-        showAuthMessage("ไม่สามารถเข้าสู่ระบบด้วย Firebase ได้: " + err.message, true);
+        const code = err.code || "";
+        let msg = "อีเมลหรือรหัสผ่านไม่ถูกต้อง";
+        if (code === "auth/user-not-found" || code === "auth/wrong-password" || code === "auth/invalid-credential") {
+          msg = "อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง";
+        } else if (code === "auth/too-many-requests") {
+          msg = "ลองเข้าสู่ระบบผิดพลาดหลายครั้ง กรุณารอสักครู่แล้วลองอีกครั้ง";
+        } else if (code === "auth/network-request-failed") {
+          msg = "ไม่มีสัญญาณอินเทอร์เน็ต กรุณาตรวจสอบการเชื่อมต่อ";
+        }
+        showAuthMessage(msg, true);
         setAuthButtonsLoading(false);
         return;
       }
@@ -577,7 +586,24 @@ document.addEventListener("DOMContentLoaded", () => {
         setAuthButtonsLoading(false);
         return;
       } catch (err) {
-        showAuthMessage("ไม่สามารถสมัครสมาชิกด้วย Firebase ได้: " + err.message, true);
+        const code = err.code || "";
+        let msg = "ไม่สามารถสมัครสมาชิกได้ กรุณาลองใหม่";
+        if (code === "auth/email-already-in-use") {
+          // Offer to switch to login tab instead
+          if (!dom.authStatus) return;
+          dom.authStatus.innerHTML = `อีเมลนี้มีบัญชีอยู่แล้ว ลอง
+            <button onclick="document.getElementById('switch-to-login').click()" style="background:none;border:none;color:var(--color-orange-fox);font-weight:700;cursor:pointer;text-decoration:underline;padding:0;">เข้าสู่ระบบแทน</button>`;
+          dom.authStatus.classList.add("auth-status-error");
+          setAuthButtonsLoading(false);
+          return;
+        } else if (code === "auth/weak-password") {
+          msg = "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร";
+        } else if (code === "auth/invalid-email") {
+          msg = "รูปแบบอีเมลไม่ถูกต้อง";
+        } else if (code === "auth/network-request-failed") {
+          msg = "ไม่มีสัญญาณอินเทอร์เน็ต กรุณาตรวจสอบการเชื่อมต่อ";
+        }
+        showAuthMessage(msg, true);
         setAuthButtonsLoading(false);
         return;
       }
