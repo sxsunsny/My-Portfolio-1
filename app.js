@@ -894,8 +894,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (targetItem) {
       setTimeout(() => {
-        openDetailModal(targetItem);
-        showToast(`เปิดสรุปที่ได้รับแชร์: ${targetItem.title} 📖`);
+        const displayImage = targetItem.image || (targetItem.pages && targetItem.pages[0]) || '';
+        if (displayImage) {
+          openLightboxModal(displayImage, targetItem.title || "รูปภาพที่ได้รับแชร์");
+          showToast(`กำลังรับชมรูปภาพสรุป: ${targetItem.title} 🖼️`);
+        } else {
+          openDetailModal(targetItem);
+        }
       }, 600);
     }
   };
@@ -1361,7 +1366,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       for (const file of files) {
         if (file.type === "application/pdf") {
-          showToast("กำลังอ่านไฟล์ PDF และแปลงเป็นสมุดภาพ... 📄");
+          showToast("กำลังอ่านไฟล์ PDF... 📄");
           const pdfPages = await convertPdfToPages(file);
           if (pdfPages.length > 0) {
             loadedBookPages.push(...pdfPages);
@@ -1381,19 +1386,28 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
 
-      // Show Previews
+      // Show Single File Preview Card
       if (dom.multiPreviewGrid) {
         dom.multiPreviewGrid.innerHTML = "";
-        loadedBookPages.forEach((pageImg, idx) => {
-          const imgEl = document.createElement("img");
-          imgEl.src = pageImg;
-          imgEl.style.cssText = "width:80px; height:80px; object-fit:cover; border-radius:8px; border:2px solid var(--color-border-light);";
-          imgEl.title = `หน้า ${idx + 1}`;
-          dom.multiPreviewGrid.appendChild(imgEl);
-        });
+        const isPdf = files.some(f => f.type === "application/pdf");
+        
+        const previewCard = document.createElement("div");
+        previewCard.style.cssText = "position:relative; display:inline-block; border:2.5px solid var(--color-border-light); border-radius:12px; padding:6px; background:var(--color-paper); box-shadow:var(--shadow-sm);";
+        
+        const coverImg = document.createElement("img");
+        coverImg.src = loadedBase64Image;
+        coverImg.style.cssText = "width:110px; height:110px; object-fit:cover; border-radius:8px;";
+
+        const badge = document.createElement("span");
+        badge.style.cssText = "position:absolute; bottom:10px; right:10px; background:rgba(0,0,0,0.75); color:#fff; font-size:11px; font-weight:700; padding:2px 8px; border-radius:12px;";
+        badge.textContent = isPdf ? `📄 PDF (${loadedBookPages.length} หน้า)` : `🖼️ ${loadedBookPages.length} รูป`;
+
+        previewCard.appendChild(coverImg);
+        previewCard.appendChild(badge);
+        dom.multiPreviewGrid.appendChild(previewCard);
       }
 
-      showToast(`โหลดรูปภาพ/สมุดสำเร็จแล้ว ${loadedBookPages.length} หน้า ✨`);
+      showToast(`โหลดไฟล์ PDF / รูปภาพสำเร็จเรียบร้อยแล้ว ✨`);
     });
   }
 
