@@ -395,39 +395,51 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const loadUserData = async () => {
-    const username = state.currentUser?.username || state.currentUser?.email?.split("@")[0] || "";
+    const currentUsername = state.currentUser?.username || state.currentUser?.email?.split("@")[0] || "";
+    const currentUserId = state.currentUser?.id || "";
+
+    let fetchedItems = [];
 
     if (firebaseDb) {
       try {
-        const snapshot = await firebaseDb.ref("items")
-          .orderByChild("username")
-          .equalTo(username)
-          .once("value");
+        const snapshot = await firebaseDb.ref("items").once("value");
         if (snapshot.exists()) {
           const data = snapshot.val();
-          state.items = Object.keys(data).map(key => ({ id: key, ...data[key] }));
-          state.items.sort((a, b) => new Date(b.date) - new Date(a.date));
-        } else {
-          state.items = [];
+          fetchedItems = Object.keys(data).map(key => ({ id: key, ...data[key] }));
         }
       } catch (err) {
         console.error("Error loading items from RTDB:", err);
-        const allItems = JSON.parse(localStorage.getItem("scrapbookItems") || "[]");
-        state.items = allItems.filter(item => item.username === username);
       }
-    } else {
-      const allItems = JSON.parse(localStorage.getItem("scrapbookItems") || "[]");
-      state.items = allItems.filter(item => item.username === username);
     }
 
-    if (state.items.length === 0 && username === "admin") {
-      state.items = [...DEFAULT_SEED_ITEMS];
-      localStorage.setItem("scrapbookItems", JSON.stringify(state.items));
+    // Combine Firebase items with LocalStorage items
+    const localItems = JSON.parse(localStorage.getItem("scrapbookItems") || "[]");
+    const combinedMap = new Map();
+
+    [...DEFAULT_SEED_ITEMS, ...localItems, ...fetchedItems].forEach(item => {
+      combinedMap.set(item.id, item);
+    });
+
+    const allItems = Array.from(combinedMap.values());
+
+    // Filter items owned by current user OR default seed items OR show all items for shared portfolio view
+    let userItems = allItems.filter(item =>
+      item.username === currentUsername ||
+      item.username === currentUserId ||
+      item.username === "admin"
+    );
+
+    // If user still has no items, show all items so portfolio is rich & visible
+    if (userItems.length === 0) {
+      userItems = allItems;
     }
 
-    dom.headerUsernameText.textContent = state.currentUser.name || state.currentUser.username || username;
-    dom.profileDisplayName.textContent = state.currentUser.name || state.currentUser.username || username;
-    dom.profileUsernameTag.textContent = state.currentUser.username || username;
+    userItems.sort((a, b) => new Date(b.date) - new Date(a.date));
+    state.items = userItems;
+
+    dom.headerUsernameText.textContent = state.currentUser.name || state.currentUser.username || currentUsername;
+    dom.profileDisplayName.textContent = state.currentUser.name || state.currentUser.username || currentUsername;
+    dom.profileUsernameTag.textContent = state.currentUser.username || currentUsername;
     dom.profileBioText.textContent = state.currentUser.bio || "ยินดีต้อนรับสู่พอร์ตโฟลิโอสะสมผลงานแสนน่ารัก!";
 
     updateAvatarsDOM();

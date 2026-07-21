@@ -2365,8 +2365,15 @@ textarea {
 }
 
 @keyframes toast-slide-in {
-  from { opacity: 0; transform: translateY(20px) scale(0.9); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .toast-message.toast-fade-out {
@@ -2374,8 +2381,15 @@ textarea {
 }
 
 @keyframes toast-fade-out {
-  from { opacity: 1; transform: scale(1); }
-  to   { opacity: 0; transform: translateY(-10px) scale(0.9); }
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.9);
+  }
 }
 
 /* 3D FLIPBOOK MODAL */
@@ -2479,7 +2493,7 @@ textarea {
 .flipbook-spine {
   width: 16px;
   height: 100%;
-  background: linear-gradient(90deg, rgba(0,0,0,0.15), rgba(255,255,255,0.1), rgba(0,0,0,0.15));
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.1), rgba(0, 0, 0, 0.15));
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
@@ -2517,7 +2531,7 @@ textarea {
   max-height: 100%;
   object-fit: contain;
   border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .page-footer-num {
@@ -2528,8 +2542,13 @@ textarea {
   color: var(--color-text-sub);
 }
 
-.page-left .page-footer-num { left: 15px; }
-.page-right .page-footer-num { right: 15px; }
+.page-left .page-footer-num {
+  left: 15px;
+}
+
+.page-right .page-footer-num {
+  right: 15px;
+}
 
 /* Mobile view for flipbook: Single page layout */
 @media (max-width: 768px) {
@@ -2537,9 +2556,11 @@ textarea {
     padding: 16px;
     height: 90vh;
   }
+
   .flipbook-page.page-left {
     display: none;
   }
+
   .flipbook-spine {
     display: none;
   }
