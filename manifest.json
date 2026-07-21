@@ -1,0 +1,20 @@
+{
+  "name": "My Portfolio",
+  "short_name": "My Portfolio",
+  "description": "สะสมผลงานและสรุปรายวิชาสุดน่ารัก - Rabbit & Fox Portfolio",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#EEF4FB",
+  "theme_color": "#1E3A8A",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "productivity"],
+  "lang": "th"
+}

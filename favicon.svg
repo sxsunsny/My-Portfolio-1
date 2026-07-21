@@ -1,0 +1,21 @@
+<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="200" rx="40" fill="#EEF4FB"/>
+  <defs>
+    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#38BDF8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1E3A8A;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Rabbit ear (tall, left) -->
+  <path d="M65 148 C62 133 53 103 56 72 C58 50 66 34 73 36 C80 38 82 56 80 77 C78 97 73 116 75 135"
+        stroke="url(#g1)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Fox ear (shorter, inner right) -->
+  <path d="M85 135 C83 119 81 99 83 77 C85 58 91 46 96 50 C101 54 100 70 96 86 C93 101 89 117 88 135"
+        stroke="#1E3A8A" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Head/face outline -->
+  <path d="M65 148 C57 150 49 156 47 167 C45 180 52 192 62 197 C70 201 84 201 92 197 C101 192 107 183 107 172 C107 159 101 150 93 145 L88 135 L84 135 L76 135 L71 146 Z"
+        stroke="url(#g1)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Fox muzzle -->
+  <path d="M76 171 C76 164 86 161 93 165 C97 167 98 174 95 179 C92 184 84 185 79 181 C76 178 76 174 76 171 Z"
+        stroke="#1E3A8A" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>

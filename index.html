@@ -4,6 +4,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Portfolio — Rabbit & Fox</title>
+  <meta name="description" content="สะสมผลงานและสรุปรายวิชาสุดน่ารัก กับ Rabbit & Fox Portfolio">
+  <meta name="theme-color" content="#1E3A8A">
+
+  <!-- Favicon & PWA Icon -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="apple-touch-icon" href="favicon.svg">
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <!-- Firebase Config & SDK -->
   <script>
     // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -25,6 +39,7 @@
   <script src="app.js" defer></script>
   <link rel="stylesheet" href="style.css">
 </head>
+
 
 <body>
 
@@ -106,6 +121,9 @@
       <div class="header-user-badge">
         <div class="avatar-mini" id="header-avatar"></div>
         <span class="user-display-name" id="header-username-text">username</span>
+        <button class="theme-toggle-btn" id="btn-theme-toggle" title="สลับโหมดมืด / สว่าง">
+          <span class="theme-toggle-icon">🌙</span>
+        </button>
         <button class="btn-logout-icon" id="btn-logout-desktop" title="ออกจากระบบ"></button>
       </div>
     </header>
@@ -387,6 +405,10 @@
         <span class="mobile-icon" id="m-nav-profile"></span>
         <span class="mobile-label">โปรไฟล์</span>
       </button>
+      <button class="mobile-nav-item" id="btn-theme-toggle-mobile" title="สลับโหมดมืด / สว่าง">
+        <span class="mobile-icon theme-toggle-icon">🌙</span>
+        <span class="mobile-label">โหมดมืด</span>
+      </button>
     </nav>
 
   </div>
@@ -403,12 +425,17 @@
           <div class="modal-gallery-wrapper">
             <button class="gallery-nav-btn gallery-prev hidden" id="gallery-prev-btn">&#8249;</button>
             <div class="modal-polaroid-frame">
-              <img id="modal-img" src="" alt="Detail Image">
+              <img id="modal-img" src="" alt="Detail Image" class="modal-clickable-img" title="คลิกเพื่อดูรูปขนาดใหญ่">
               <div id="modal-sticker-overlay" class="polaroid-sticker"></div>
               <div class="gallery-counter hidden" id="gallery-counter">1 / 1</div>
-              <button class="btn btn-download-overlay" id="btn-modal-download" title="ดาวน์โหลดรูปภาพ">
-                <span class="download-icon">📥</span> ดาวน์โหลดรูปภาพ
-              </button>
+              <div class="modal-image-actions">
+                <button class="btn btn-zoom-overlay" id="btn-modal-zoom" title="ดูรูปขนาดใหญ่">
+                  <span class="zoom-icon">🔍</span> ดูรูปขนาดใหญ่
+                </button>
+                <button class="btn btn-download-overlay" id="btn-modal-download" title="ดาวน์โหลดรูปภาพ">
+                  <span class="download-icon">📥</span> ดาวน์โหลด
+                </button>
+              </div>
             </div>
             <button class="gallery-nav-btn gallery-next hidden" id="gallery-next-btn">&#8250;</button>
           </div>
@@ -426,6 +453,33 @@
             <p id="modal-desc" class="modal-description-text"></p>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= FULLSCREEN IMAGE LIGHTBOX MODAL ================= -->
+  <div id="image-lightbox-modal" class="lightbox-backdrop hidden" tabindex="-1">
+    <div class="lightbox-container">
+      <button class="lightbox-close-btn" id="lightbox-close-btn" title="ปิด (Esc)">×</button>
+
+      <div class="lightbox-header">
+        <h3 class="lightbox-title" id="lightbox-title">รูปภาพขนาดใหญ่</h3>
+        <div class="lightbox-toolbar">
+          <button class="lightbox-btn" id="lightbox-zoom-toggle" title="ย่อ / ขยาย">
+            <span id="lightbox-zoom-icon">🔍</span> <span id="lightbox-zoom-label">ขยาย 100%</span>
+          </button>
+          <button class="lightbox-btn" id="lightbox-download-btn" title="ดาวน์โหลดรูปภาพ">
+            📥 ดาวน์โหลด
+          </button>
+        </div>
+      </div>
+
+      <div class="lightbox-image-stage" id="lightbox-image-stage">
+        <img id="lightbox-img" src="" alt="Large View" class="lightbox-img fit-contain">
+      </div>
+
+      <div class="lightbox-footer">
+        <p class="lightbox-hint">💡 คลิกที่รูปเพื่อย่อ/ขยาย · กด Esc หรือคลิกพื้นหลังเพื่อปิด</p>
       </div>
     </div>
   </div>

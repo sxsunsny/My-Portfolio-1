@@ -1,21 +1,29 @@
 // SVG Assets for Zootopia-themed Portfolio Website
 const SVG_ASSETS = {
-  // Playful Logo (Fox & Rabbit side-by-side or combined)
-  logo: `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <!-- Fox Ears (Left) -->
-    <path d="M25 45L40 10L48 35L25 45Z" fill="#E07A5F" stroke="#8B5E3C" stroke-width="3" stroke-linejoin="round"/>
-    <path d="M30 40L40 18L44 33L30 40Z" fill="#F4A261" />
-    <!-- Rabbit Ears (Right) -->
-    <path d="M75 45L60 5L52 35L75 45Z" fill="#DFB892" stroke="#8B5E3C" stroke-width="3" stroke-linejoin="round"/>
-    <path d="M70 40L60 14L56 33L70 40Z" fill="#F4C2C2" />
-    <!-- Combined Circle Base -->
-    <circle cx="50" cy="65" r="28" fill="#FDFBF7" stroke="#8B5E3C" stroke-width="3"/>
-    <!-- Fox Cheek Details -->
-    <path d="M28 65C28 55 45 55 48 62" stroke="#8B5E3C" stroke-width="2"/>
-    <!-- Rabbit Cheek Details -->
-    <path d="M72 65C72 55 55 55 52 62" stroke="#8B5E3C" stroke-width="2"/>
-    <!-- Joint Heart nose/center -->
-    <path d="M50 63C50 63 47 60 45 61C43 62 45 66 50 70C55 66 57 62 55 61C53 60 50 63 50 63Z" fill="#E07A5F"/>
+  // My Portfolio Logo (Rabbit & Fox combined silhouette, blue gradient outline)
+  logo: `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#38BDF8;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#1E3A8A;stop-opacity:1" />
+      </linearGradient>
+    </defs>
+    <!-- Rabbit ear (tall, left) -->
+    <path d="M60 130 C55 115 45 85 48 55 C50 32 58 18 65 20 C72 22 74 38 72 60 C70 80 66 100 68 118" 
+          stroke="url(#logoGrad)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <!-- Fox ear (shorter, right/inner) -->
+    <path d="M78 118 C76 102 74 82 76 60 C78 42 85 30 90 34 C95 38 94 55 90 72 C87 88 83 105 82 118" 
+          stroke="#1E3A8A" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <!-- Combined head/face outline -->
+    <path d="M60 130 C52 132 44 138 42 148 C40 160 46 172 56 178 C64 183 76 184 85 180 C94 176 100 168 100 158 C100 145 94 136 86 130 L82 118 L78 118 L68 118 L64 128 Z" 
+          stroke="url(#logoGrad)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <!-- Fox muzzle/snout inner detail -->
+    <path d="M68 155 C68 148 78 145 85 149 C89 151 90 158 87 163 C84 167 76 168 71 165 C68 162 68 158 68 155 Z" 
+          stroke="#1E3A8A" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <!-- Text: My -->
+    <text x="108" y="150" font-family="Outfit, sans-serif" font-weight="700" font-size="28" fill="#38BDF8">My</text>
+    <!-- Text: Portfolio -->
+    <text x="108" y="178" font-family="Outfit, sans-serif" font-weight="800" font-size="26" fill="#1E3A8A">Portfolio</text>
   </svg>`,
 
   // Nick Wilde Fox Sticker

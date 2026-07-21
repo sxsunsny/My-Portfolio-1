@@ -131,12 +131,28 @@ document.addEventListener("DOMContentLoaded", () => {
     modalCloseTrigger: document.getElementById("modal-close-trigger"),
     modalImg: document.getElementById("modal-img"),
     modalStickerOverlay: document.getElementById("modal-sticker-overlay"),
+    btnModalZoom: document.getElementById("btn-modal-zoom"),
     btnModalDownload: document.getElementById("btn-modal-download"),
     modalTag: document.getElementById("modal-tag"),
     modalDate: document.getElementById("modal-date"),
     modalSubjectCode: document.getElementById("modal-subject-code"),
     modalTitle: document.getElementById("modal-title"),
-    modalDesc: document.getElementById("modal-desc")
+    modalDesc: document.getElementById("modal-desc"),
+
+    // Image Lightbox Modal Elements
+    imageLightboxModal: document.getElementById("image-lightbox-modal"),
+    lightboxCloseBtn: document.getElementById("lightbox-close-btn"),
+    lightboxTitle: document.getElementById("lightbox-title"),
+    lightboxZoomToggle: document.getElementById("lightbox-zoom-toggle"),
+    lightboxZoomIcon: document.getElementById("lightbox-zoom-icon"),
+    lightboxZoomLabel: document.getElementById("lightbox-zoom-label"),
+    lightboxDownloadBtn: document.getElementById("lightbox-download-btn"),
+    lightboxImageStage: document.getElementById("lightbox-image-stage"),
+    lightboxImg: document.getElementById("lightbox-img"),
+
+    // Theme Toggle Buttons
+    btnThemeToggle: document.getElementById("btn-theme-toggle"),
+    btnThemeToggleMobile: document.getElementById("btn-theme-toggle-mobile")
   };
 
   // ================= INJECT VECTOR SVGS =================
@@ -858,10 +874,137 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Close on Escape key press
+  // ================= FULLSCREEN IMAGE LIGHTBOX MODAL LOGIC =================
+  let lightboxActiveUrl = "";
+  let lightboxActiveTitle = "";
+
+  const openLightboxModal = (imgUrl, title = "รูปภาพขนาดใหญ่") => {
+    if (!imgUrl || !dom.imageLightboxModal) return;
+
+    lightboxActiveUrl = imgUrl;
+    lightboxActiveTitle = title;
+
+    dom.lightboxImg.src = imgUrl;
+    dom.lightboxImg.alt = title;
+    dom.lightboxTitle.textContent = title;
+    dom.lightboxImg.classList.remove("zoomed");
+    dom.lightboxZoomLabel.textContent = "ขยาย 150%";
+    dom.lightboxZoomIcon.textContent = "🔍";
+
+    dom.imageLightboxModal.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+  };
+
+  const closeLightboxModal = () => {
+    if (!dom.imageLightboxModal) return;
+    dom.imageLightboxModal.classList.add("hidden");
+    // Only restore body overflow if detail modal is also closed
+    if (dom.detailModal && dom.detailModal.classList.contains("hidden")) {
+      document.body.style.overflow = "";
+    }
+    lightboxActiveUrl = "";
+    lightboxActiveTitle = "";
+  };
+
+  const toggleLightboxZoom = () => {
+    if (!dom.lightboxImg) return;
+    const isZoomed = dom.lightboxImg.classList.toggle("zoomed");
+    if (isZoomed) {
+      dom.lightboxZoomLabel.textContent = "ย่อ 100%";
+      dom.lightboxZoomIcon.textContent = "🔍";
+    } else {
+      dom.lightboxZoomLabel.textContent = "ขยาย 150%";
+      dom.lightboxZoomIcon.textContent = "🔍";
+    }
+  };
+
+  const triggerLightboxDownload = async () => {
+    if (!lightboxActiveUrl) return;
+    const cleanTitle = (lightboxActiveTitle || "image").replace(/[^a-zA-Z0-9\u0E00-\u0E7F\s-_]/g, '').trim() || 'image';
+    const filename = `${cleanTitle}-large.png`;
+
+    try {
+      if (lightboxActiveUrl.startsWith('data:')) {
+        const link = document.createElement('a');
+        link.href = lightboxActiveUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        const response = await fetch(lightboxActiveUrl);
+        if (!response.ok) throw new Error('Network error');
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = filename.replace('.png', '.jpg');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(blobUrl);
+      }
+    } catch (err) {
+      window.open(lightboxActiveUrl, '_blank');
+    }
+  };
+
+  // Bind Lightbox Event Listeners
+  if (dom.modalImg) {
+    dom.modalImg.addEventListener("click", () => {
+      openLightboxModal(dom.modalImg.src, dom.modalTitle.textContent);
+    });
+  }
+
+  if (dom.btnModalZoom) {
+    dom.btnModalZoom.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openLightboxModal(dom.modalImg.src, dom.modalTitle.textContent);
+    });
+  }
+
+  // Also bind selfie photo in hero banner to open in full size
+  const selfieImg = document.querySelector(".selfie-img");
+  if (selfieImg) {
+    selfieImg.style.cursor = "zoom-in";
+    selfieImg.title = "คลิกเพื่อดูรูปขนาดใหญ่";
+    selfieImg.addEventListener("click", () => {
+      openLightboxModal(selfieImg.src, "Judy & Nick Selfie 🥕🦊");
+    });
+  }
+
+  if (dom.lightboxCloseBtn) {
+    dom.lightboxCloseBtn.addEventListener("click", closeLightboxModal);
+  }
+
+  if (dom.lightboxZoomToggle) {
+    dom.lightboxZoomToggle.addEventListener("click", toggleLightboxZoom);
+  }
+
+  if (dom.lightboxImg) {
+    dom.lightboxImg.addEventListener("click", toggleLightboxZoom);
+  }
+
+  if (dom.lightboxDownloadBtn) {
+    dom.lightboxDownloadBtn.addEventListener("click", triggerLightboxDownload);
+  }
+
+  if (dom.imageLightboxModal) {
+    dom.imageLightboxModal.addEventListener("click", (e) => {
+      if (e.target === dom.imageLightboxModal || e.target === dom.lightboxImageStage) {
+        closeLightboxModal();
+      }
+    });
+  }
+
+  // Close on Escape key press (Handles both Lightbox and Detail modal)
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !dom.detailModal.classList.contains("hidden")) {
-      closeDetailModal();
+    if (e.key === "Escape") {
+      if (dom.imageLightboxModal && !dom.imageLightboxModal.classList.contains("hidden")) {
+        closeLightboxModal();
+      } else if (dom.detailModal && !dom.detailModal.classList.contains("hidden")) {
+        closeDetailModal();
+      }
     }
   });
 
@@ -1141,6 +1284,48 @@ document.addEventListener("DOMContentLoaded", () => {
     dom.btnSaveProfile.classList.add("hidden");
   });
 
+  // ================= THEME (LIGHT / DARK MODE) LOGIC =================
+  const initTheme = () => {
+    const savedTheme = localStorage.getItem("scrapbookTheme");
+    const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const initialTheme = savedTheme || (prefersDark ? "dark" : "light");
+
+    applyTheme(initialTheme);
+
+    const toggleHandler = (e) => {
+      e.preventDefault();
+      const currentTheme = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+      const nextTheme = currentTheme === "dark" ? "light" : "dark";
+      applyTheme(nextTheme);
+    };
+
+    if (dom.btnThemeToggle) dom.btnThemeToggle.addEventListener("click", toggleHandler);
+    if (dom.btnThemeToggleMobile) dom.btnThemeToggleMobile.addEventListener("click", toggleHandler);
+  };
+
+  const applyTheme = (theme) => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("scrapbookTheme", theme);
+
+    const isDark = theme === "dark";
+    const iconStr = isDark ? "☀️" : "🌙";
+    const labelStr = isDark ? "โหมดสว่าง" : "โหมดมืด";
+
+    if (dom.btnThemeToggle) {
+      const iconSpan = dom.btnThemeToggle.querySelector(".theme-toggle-icon");
+      if (iconSpan) iconSpan.textContent = iconStr;
+      dom.btnThemeToggle.title = isDark ? "เปลี่ยนเป็นโหมดสว่าง" : "เปลี่ยนเป็นโหมดมืด";
+    }
+
+    if (dom.btnThemeToggleMobile) {
+      const iconSpan = dom.btnThemeToggleMobile.querySelector(".theme-toggle-icon");
+      const labelSpan = dom.btnThemeToggleMobile.querySelector(".mobile-label");
+      if (iconSpan) iconSpan.textContent = iconStr;
+      if (labelSpan) labelSpan.textContent = labelStr;
+      dom.btnThemeToggleMobile.title = isDark ? "เปลี่ยนเป็นโหมดสว่าง" : "เปลี่ยนเป็นโหมดมืด";
+    }
+  };
+
   // ================= UTILITIES & HELPERS =================
   const escapeHTML = (str) => {
     if (!str) return "";
@@ -1158,5 +1343,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // ================= START INITIALIZATION =================
   injectSVGs();
   initNavigation();
+  initTheme();
   checkAuthStatus();
 });
