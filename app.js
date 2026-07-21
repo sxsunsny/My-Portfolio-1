@@ -1386,7 +1386,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
 
-      // Show Single File Preview Card
+      // Show Single File Preview Card with Delete button
       if (dom.multiPreviewGrid) {
         dom.multiPreviewGrid.innerHTML = "";
         const isPdf = files.some(f => f.type === "application/pdf");
@@ -1402,8 +1402,27 @@ document.addEventListener("DOMContentLoaded", () => {
         badge.style.cssText = "position:absolute; bottom:10px; right:10px; background:rgba(0,0,0,0.75); color:#fff; font-size:11px; font-weight:700; padding:2px 8px; border-radius:12px;";
         badge.textContent = isPdf ? `📄 PDF (${loadedBookPages.length} หน้า)` : `🖼️ ${loadedBookPages.length} รูป`;
 
+        // Delete File Button
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.title = "ลบไฟล์นี้";
+        removeBtn.innerHTML = "×";
+        removeBtn.style.cssText = "position:absolute; top:-8px; right:-8px; background:#EF4444; color:#fff; border:2px solid #fff; border-radius:50%; width:24px; height:24px; font-size:16px; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,0.2); transition:transform 0.2s ease;";
+        
+        removeBtn.addEventListener("mouseover", () => removeBtn.style.transform = "scale(1.15)");
+        removeBtn.addEventListener("mouseout", () => removeBtn.style.transform = "scale(1)");
+        removeBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          loadedBase64Image = "";
+          loadedBookPages = [];
+          if (dom.imageUploadInput) dom.imageUploadInput.value = "";
+          dom.multiPreviewGrid.innerHTML = "";
+          showToast("ยกเลิกการเลือกไฟล์เรียบร้อยแล้ว 🗑️");
+        });
+
         previewCard.appendChild(coverImg);
         previewCard.appendChild(badge);
+        previewCard.appendChild(removeBtn);
         dom.multiPreviewGrid.appendChild(previewCard);
       }
 
