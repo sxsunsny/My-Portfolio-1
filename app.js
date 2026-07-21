@@ -381,8 +381,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function fallbackLocalAuth() {
       const userJson = localStorage.getItem("currentUser");
+      const urlParams = new URLSearchParams(window.location.search);
+      const isSharedLink = urlParams.has("item");
+
       if (userJson) {
         state.currentUser = JSON.parse(userJson);
+        loadUserData();
+        dom.authGate.classList.add("hidden");
+        dom.appContainer.classList.remove("hidden");
+        navigateTo("home");
+      } else if (isSharedLink) {
+        // Guest user opening a public shared link!
+        state.currentUser = { username: "guest", name: "เพื่อนที่ได้รับลิงก์แชร์ 🦊", avatar: "judy", bio: "กำลังรับชมสรุปบทเรียนผ่านลิงก์แชร์" };
         loadUserData();
         dom.authGate.classList.add("hidden");
         dom.appContainer.classList.remove("hidden");
@@ -853,18 +863,40 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // Check URL query parameters for auto-opening shared item
-  const checkSharedUrlItem = () => {
+  // Check URL query parameters for auto-opening shared item (Works for unauthenticated guests!)
+  const checkSharedUrlItem = async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const sharedItemId = urlParams.get("item");
-    if (sharedItemId) {
-      const foundItem = state.items.find(i => i.id === sharedItemId);
-      if (foundItem) {
-        setTimeout(() => {
-          openDetailModal(foundItem);
-          showToast(`เปิดสรุปที่แชร์: ${foundItem.title} 📖`);
-        }, 500);
+    if (!sharedItemId) return;
+
+    let targetItem = null;
+
+    // 1. Check in DEFAULT_SEED_ITEMS
+    targetItem = DEFAULT_SEED_ITEMS.find(i => i.id === sharedItemId);
+
+    // 2. Check in LocalStorage
+    if (!targetItem) {
+      const localItems = JSON.parse(localStorage.getItem("scrapbookItems") || "[]");
+      targetItem = localItems.find(i => i.id === sharedItemId);
+    }
+
+    // 3. Fetch from Firebase Realtime Database
+    if (!targetItem && firebaseDb) {
+      try {
+        const snapshot = await firebaseDb.ref("items/" + sharedItemId).once("value");
+        if (snapshot.exists()) {
+          targetItem = { id: sharedItemId, ...snapshot.val() };
+        }
+      } catch (err) {
+        console.error("Error fetching shared item from Firebase:", err);
       }
+    }
+
+    if (targetItem) {
+      setTimeout(() => {
+        openDetailModal(targetItem);
+        showToast(`เปิดสรุปที่ได้รับแชร์: ${targetItem.title} 📖`);
+      }, 600);
     }
   };
 
