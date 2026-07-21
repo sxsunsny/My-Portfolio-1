@@ -1311,16 +1311,29 @@ document.addEventListener("DOMContentLoaded", () => {
     const iconStr = isDark ? "☀️" : "🌙";
     const labelStr = isDark ? "โหมดสว่าง" : "โหมดมืด";
 
+    // Helper: trigger spin animation on an icon span
+    const animateIcon = (iconSpan) => {
+      if (!iconSpan) return;
+      iconSpan.classList.remove("switching");
+      // Force reflow to restart animation
+      void iconSpan.offsetWidth;
+      iconSpan.textContent = iconStr;
+      iconSpan.classList.add("switching");
+      iconSpan.addEventListener("animationend", () => {
+        iconSpan.classList.remove("switching");
+      }, { once: true });
+    };
+
     if (dom.btnThemeToggle) {
       const iconSpan = dom.btnThemeToggle.querySelector(".theme-toggle-icon");
-      if (iconSpan) iconSpan.textContent = iconStr;
+      animateIcon(iconSpan);
       dom.btnThemeToggle.title = isDark ? "เปลี่ยนเป็นโหมดสว่าง" : "เปลี่ยนเป็นโหมดมืด";
     }
 
     if (dom.btnThemeToggleMobile) {
       const iconSpan = dom.btnThemeToggleMobile.querySelector(".theme-toggle-icon");
       const labelSpan = dom.btnThemeToggleMobile.querySelector(".mobile-label");
-      if (iconSpan) iconSpan.textContent = iconStr;
+      animateIcon(iconSpan);
       if (labelSpan) labelSpan.textContent = labelStr;
       dom.btnThemeToggleMobile.title = isDark ? "เปลี่ยนเป็นโหมดสว่าง" : "เปลี่ยนเป็นโหมดมืด";
     }

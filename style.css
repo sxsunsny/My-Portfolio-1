@@ -189,7 +189,7 @@ textarea {
 }
 
 .auth-card {
-  background: rgba(255, 253, 251, 0.9);
+  background: var(--color-paper);
   border: 3px solid var(--color-border);
   border-radius: var(--border-radius-lg);
   padding: 40px 30px;
@@ -290,10 +290,41 @@ textarea {
   transition: all 0.25s ease;
 }
 
+.input-group input::placeholder {
+  color: var(--color-text-sub);
+  opacity: 0.75;
+}
+
 .input-group input:focus {
   border-color: var(--color-border);
-  box-shadow: 0 0 0 4px rgba(139, 94, 60, 0.1);
-  background-color: #fff;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+  background-color: var(--color-paper);
+  color: var(--color-text-main);
+  outline: none;
+}
+
+/* Dark mode: explicit overrides for auth inputs */
+[data-theme="dark"] .auth-card {
+  background: #1C2541;
+  box-shadow: 0 16px 0 rgba(58, 80, 107, 0.6), 0 20px 40px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme="dark"] .input-group input {
+  background-color: #0F1B30;
+  color: #F1F5F9;
+  border-color: #3A506B;
+}
+
+[data-theme="dark"] .input-group input::placeholder {
+  color: #64748B;
+  opacity: 1;
+}
+
+[data-theme="dark"] .input-group input:focus {
+  background-color: #162033;
+  color: #F1F5F9;
+  border-color: #60A5FA;
+  box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.2);
 }
 
 .auth-switch {
@@ -2121,4 +2152,142 @@ textarea {
   .modal-description-wrapper {
     max-height: 200px;
   }
+}
+
+/* ================= DARK MODE TOGGLE BUTTON ================= */
+
+/* Smooth transition for all theme-sensitive elements */
+*,
+*::before,
+*::after {
+  transition: background-color 0.35s ease, color 0.35s ease,
+    border-color 0.35s ease, box-shadow 0.35s ease;
+}
+
+/* Desktop Header Toggle Button */
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 2px solid var(--color-border-light);
+  border-radius: 999px;
+  background: var(--color-paper);
+  color: var(--color-text-main);
+  font-size: 15px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.35s ease, color 0.35s ease,
+    border-color 0.35s ease, box-shadow 0.35s ease,
+    transform 0.2s ease;
+}
+
+.theme-toggle-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg,
+      rgba(59, 130, 246, 0.08),
+      rgba(96, 165, 250, 0.06));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: inherit;
+}
+
+.theme-toggle-btn:hover::before {
+  opacity: 1;
+}
+
+.theme-toggle-btn:hover {
+  border-color: var(--color-orange-fox);
+  box-shadow: var(--shadow-md), 0 0 0 3px rgba(59, 130, 246, 0.15);
+  transform: translateY(-1px);
+}
+
+.theme-toggle-btn:active {
+  transform: translateY(0) scale(0.96);
+  box-shadow: var(--shadow-sm);
+}
+
+.theme-toggle-btn .theme-toggle-icon {
+  font-size: 16px;
+  display: inline-block;
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  line-height: 1;
+}
+
+.theme-toggle-btn:hover .theme-toggle-icon {
+  transform: rotate(20deg) scale(1.2);
+}
+
+/* Dark mode active state — glow effect */
+[data-theme="dark"] .theme-toggle-btn {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(96, 165, 250, 0.4);
+  color: #93C5FD;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.25), var(--shadow-sm);
+}
+
+[data-theme="dark"] .theme-toggle-btn:hover {
+  background: rgba(59, 130, 246, 0.22);
+  border-color: #60A5FA;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.4), var(--shadow-md);
+}
+
+/* Mobile Nav Dark Mode button */
+.mobile-nav-bar .mobile-nav-item#btn-theme-toggle-mobile {
+  position: relative;
+}
+
+.mobile-nav-bar .mobile-nav-item#btn-theme-toggle-mobile .mobile-icon {
+  font-size: 20px;
+  display: block;
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  line-height: 1;
+}
+
+.mobile-nav-bar .mobile-nav-item#btn-theme-toggle-mobile:hover .mobile-icon,
+.mobile-nav-bar .mobile-nav-item#btn-theme-toggle-mobile:active .mobile-icon {
+  transform: rotate(25deg) scale(1.25);
+}
+
+/* Dark mode: highlight mobile toggle */
+[data-theme="dark"] .mobile-nav-bar .mobile-nav-item#btn-theme-toggle-mobile {
+  color: #60A5FA;
+}
+
+[data-theme="dark"] .mobile-nav-bar .mobile-nav-item#btn-theme-toggle-mobile::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  background: #60A5FA;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #60A5FA;
+}
+
+/* Spin-in animation when icon changes */
+@keyframes spin-in {
+  from {
+    transform: rotate(-180deg) scale(0.5);
+    opacity: 0;
+  }
+
+  to {
+    transform: rotate(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
+.theme-toggle-icon.switching {
+  animation: spin-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
