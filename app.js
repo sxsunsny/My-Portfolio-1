@@ -171,7 +171,10 @@ document.addEventListener("DOMContentLoaded", () => {
     flipLeftContent: document.getElementById("flip-left-content"),
     flipRightContent: document.getElementById("flip-right-content"),
     flipLeftNum: document.getElementById("flip-left-num"),
-    flipRightNum: document.getElementById("flip-right-num")
+    flipRightNum: document.getElementById("flip-right-num"),
+
+    // Lightbox image stage (for PDF page navigation injection)
+    lightboxImageStage: document.getElementById("lightbox-image-stage")
   };
 
   // ================= INJECT VECTOR SVGS =================
@@ -825,9 +828,9 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // Share item logic
-  const handleShareItem = async (item) => {
+  const handleShareItem = async (item, mode = "view") => {
     if (!item) return;
-    const shareUrl = `${window.location.origin}${window.location.pathname}?item=${item.id}`;
+    const shareUrl = `${window.location.origin}${window.location.pathname}?item=${item.id}${mode === "flipbook" ? "&mode=flipbook" : ""}`;
     const shareData = {
       title: `${item.title} — Rabbit & Fox`,
       text: item.description,
@@ -893,13 +896,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (targetItem) {
+      const openMode = urlParams.get("mode") || "view";
       setTimeout(() => {
-        const displayImage = targetItem.image || (targetItem.pages && targetItem.pages[0]) || '';
-        if (displayImage) {
-          openLightboxModal(displayImage, targetItem.title || "รูปภาพที่ได้รับแชร์");
-          showToast(`กำลังรับชมรูปภาพสรุป: ${targetItem.title} 🖼️`);
+        if (openMode === "flipbook") {
+          openFlipbookModal(targetItem);
+          showToast(`กำลังเปิดสมุดบันทึก Flipbook: ${targetItem.title} 📖`);
         } else {
-          openDetailModal(targetItem);
+          const allPages = targetItem.pages && targetItem.pages.length > 0 ? targetItem.pages : [];
+          const displayImage = targetItem.image || (allPages.length > 0 ? allPages[0] : '');
+          if (displayImage) {
+            openLightboxModal(displayImage, targetItem.title || "รูปภาพที่ได้รับแชร์", allPages);
+            showToast(`กำลังรับชมรูปภาพสรุป: ${targetItem.title} 🖼️`);
+          } else {
+            openDetailModal(targetItem);
+          }
         }
       }, 600);
     }
@@ -997,7 +1007,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (dom.btnModalShare) {
     dom.btnModalShare.addEventListener("click", () => {
-      if (modalActiveItem) handleShareItem(modalActiveItem);
+      if (modalActiveItem) handleShareItem(modalActiveItem, "view");
+    });
+  }
+
+  // Share as Flipbook button inside Flipbook Modal
+  const btnShareFlipbook = document.getElementById("btn-share-flipbook");
+  if (btnShareFlipbook) {
+    btnShareFlipbook.addEventListener("click", () => {
+      if (modalActiveItem) {
+        handleShareItem(modalActiveItem, "flipbook");
+        showToast("คัดลอกลิงก์ Flipbook แล้ว! เพื่อนจะเปิดดูเป็นสมุดได้ทันที 📖🔗");
+      }
     });
   }
 
@@ -1109,22 +1130,71 @@ document.addEventListener("DOMContentLoaded", () => {
   // ================= FULLSCREEN IMAGE LIGHTBOX MODAL LOGIC =================
   let lightboxActiveUrl = "";
   let lightboxActiveTitle = "";
+  let lightboxPages = [];      // All pages for PDF multi-page navigation
+  let lightboxCurrentPage = 0;
 
-  const openLightboxModal = (imgUrl, title = "รูปภาพขนาดใหญ่") => {
+  const openLightboxModal = (imgUrl, title = "รูปภาพขนาดใหญ่", allPages = []) => {
     if (!imgUrl || !dom.imageLightboxModal) return;
 
-    lightboxActiveUrl = imgUrl;
+    lightboxPages = allPages.length > 0 ? allPages : [imgUrl];
+    lightboxCurrentPage = 0;
+    lightboxActiveUrl = lightboxPages[0];
     lightboxActiveTitle = title;
 
-    dom.lightboxImg.src = imgUrl;
+    dom.lightboxImg.src = lightboxActiveUrl;
     dom.lightboxImg.alt = title;
     dom.lightboxTitle.textContent = title;
     dom.lightboxImg.classList.remove("zoomed");
     dom.lightboxZoomLabel.textContent = "ขยาย 150%";
     dom.lightboxZoomIcon.textContent = "🔍";
 
+    // Update/create page navigation in lightbox
+    renderLightboxPageNav();
+
     dom.imageLightboxModal.classList.remove("hidden");
     document.body.style.overflow = "hidden";
+  };
+
+  const renderLightboxPageNav = () => {
+    let navEl = document.getElementById("lightbox-page-nav");
+    if (!navEl) {
+      navEl = document.createElement("div");
+      navEl.id = "lightbox-page-nav";
+      navEl.style.cssText = "display:flex; align-items:center; gap:14px; justify-content:center; padding:10px 0;";
+      // Insert after image stage
+      const stage = dom.lightboxImageStage;
+      if (stage && stage.parentNode) stage.parentNode.insertBefore(navEl, stage.nextSibling);
+    }
+
+    if (lightboxPages.length <= 1) {
+      navEl.style.display = "none";
+      return;
+    }
+    navEl.style.display = "flex";
+
+    navEl.innerHTML = `
+      <button id="lb-prev-btn" style="background:rgba(255,255,255,0.15); border:2px solid rgba(255,255,255,0.4); color:#fff; border-radius:50%; width:36px; height:36px; font-size:20px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s;" ${lightboxCurrentPage === 0 ? 'disabled style="opacity:0.3; cursor:not-allowed"' : ''}>‹</button>
+      <span style="color:rgba(255,255,255,0.85); font-size:13px; font-weight:700;">หน้า ${lightboxCurrentPage + 1} / ${lightboxPages.length}</span>
+      <button id="lb-next-btn" style="background:rgba(255,255,255,0.15); border:2px solid rgba(255,255,255,0.4); color:#fff; border-radius:50%; width:36px; height:36px; font-size:20px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s;" ${lightboxCurrentPage >= lightboxPages.length - 1 ? 'disabled style="opacity:0.3; cursor:not-allowed"' : ''}>›</button>
+    `;
+    document.getElementById("lb-prev-btn")?.addEventListener("click", () => {
+      if (lightboxCurrentPage > 0) {
+        lightboxCurrentPage--;
+        lightboxActiveUrl = lightboxPages[lightboxCurrentPage];
+        dom.lightboxImg.src = lightboxActiveUrl;
+        dom.lightboxImg.classList.remove("zoomed");
+        renderLightboxPageNav();
+      }
+    });
+    document.getElementById("lb-next-btn")?.addEventListener("click", () => {
+      if (lightboxCurrentPage < lightboxPages.length - 1) {
+        lightboxCurrentPage++;
+        lightboxActiveUrl = lightboxPages[lightboxCurrentPage];
+        dom.lightboxImg.src = lightboxActiveUrl;
+        dom.lightboxImg.classList.remove("zoomed");
+        renderLightboxPageNav();
+      }
+    });
   };
 
   const closeLightboxModal = () => {

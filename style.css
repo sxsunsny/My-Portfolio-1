@@ -2460,6 +2460,20 @@ textarea {
   cursor: not-allowed;
 }
 
+.flip-btn-share {
+  background: linear-gradient(135deg, var(--color-orange-fox), #e76010);
+  border-color: transparent;
+  color: #fff;
+  margin-left: 6px;
+}
+
+.flip-btn-share:hover:not(:disabled) {
+  filter: brightness(1.12);
+  border-color: transparent;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
 .flipbook-page-indicator {
   font-weight: 700;
   font-size: 14px;
